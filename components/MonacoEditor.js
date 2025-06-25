@@ -116,8 +116,27 @@ const MonacoEditor = ({ value, onChange, language, theme, options }) => {
   }, []);
 
   useEffect(() => {
-    if (editorRef.current && value !== editorRef.current.getValue()) {
-      editorRef.current.setValue(value || "");
+    if (
+      editorRef.current &&
+      typeof value === "string" &&
+      value !== editorRef.current.getValue()
+    ) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        const currentValue = model.getValue();
+        if (currentValue !== value) {
+          model.pushEditOperations(
+            [],
+            [
+              {
+                range: model.getFullModelRange(),
+                text: value,
+              },
+            ],
+            () => null
+          );
+        }
+      }
     }
   }, [value]);
 

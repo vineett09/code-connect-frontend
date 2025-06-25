@@ -23,7 +23,6 @@ export default function EnterRoom() {
     roomId: "",
     userName: "",
     roomName: "",
-    isPrivate: false,
     language: "javascript",
   });
   const [generatedRoomId, setGeneratedRoomId] = useState("");
@@ -114,7 +113,6 @@ export default function EnterRoom() {
             roomId: formData.roomId,
             roomName: formData.roomName,
             language: formData.language,
-            isPrivate: formData.isPrivate,
             userName: formData.userName,
           }),
         });
@@ -328,28 +326,6 @@ export default function EnterRoom() {
                           </option>
                         ))}
                       </select>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        name="isPrivate"
-                        id="isPrivate"
-                        checked={formData.isPrivate}
-                        onChange={handleInputChange}
-                        className="w-5 h-5 rounded border-white/10 bg-slate-700/50 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
-                      />
-                      <label
-                        htmlFor="isPrivate"
-                        className="flex items-center space-x-2 text-gray-300"
-                      >
-                        {formData.isPrivate ? (
-                          <Lock className="w-4 h-4" />
-                        ) : (
-                          <Globe className="w-4 h-4" />
-                        )}
-                        <span>Private Room</span>
-                      </label>
                     </div>
                   </>
                 )}

@@ -6,20 +6,15 @@ import io from "socket.io-client";
 import {
   Users,
   MessageCircle,
-  Settings,
+  Plus,
   Copy,
   Check,
   Send,
-  User,
   Code,
-  Play,
   ArrowLeft,
-  Maximize2,
-  Minimize2,
   ChevronDown,
   Palette,
   Download,
-  Upload,
 } from "lucide-react";
 
 import MonacoEditor from "@/components/MonacoEditor";
@@ -31,9 +26,6 @@ export default function RoomPage() {
   const [roomData, setRoomData] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
-  const [code, setCode] = useState(
-    "// Welcome to the collaborative code editor!\n// Start typing your code here...\n\nfunction hello() {\n  console.log('Hello, World!');\n}\n\nhello();"
-  );
   const [messages, setMessages] = useState([]);
   const [chatMessage, setChatMessage] = useState("");
   const [showChat, setShowChat] = useState(true);
@@ -41,6 +33,12 @@ export default function RoomPage() {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tabs, setTabs] = useState([]);
+  const [activeTab, setActiveTab] = useState("main");
+
+  // FIXED: Better tab content management
+  const [tabContents, setTabContents] = useState({}); // Local editor content for each tab
+  const [lastSavedContents, setLastSavedContents] = useState({}); // Last known server content
 
   // Editor specific states
   const [editorLanguage, setEditorLanguage] = useState("javascript");
@@ -50,6 +48,8 @@ export default function RoomPage() {
   const [fontSize, setFontSize] = useState(14);
 
   const messagesEndRef = useRef(null);
+  const isUpdatingFromServer = useRef(false);
+  const editorRef = useRef(null);
 
   // Supported languages
   const languages = [
@@ -83,33 +83,128 @@ export default function RoomPage() {
     { id: "hc-black", name: "High Contrast Dark" },
   ];
 
+  // FIXED: Update editor language when active tab changes
+  useEffect(() => {
+    const tab = tabs.find((t) => t.id === activeTab);
+    if (tab?.language) {
+      setEditorLanguage(tab.language);
+    }
+  }, [activeTab, tabs]);
+
   // Initialize socket connection
   useEffect(() => {
-    const userName = localStorage.getItem("userName");
-    if (!userName) {
-      router.push("/");
-      return;
-    }
-
     const newSocket = io("http://localhost:5000");
     setSocket(newSocket);
 
+    const userName = localStorage.getItem("userName");
+    if (!userName) return router.push("/");
+
     newSocket.on("connect", () => {
-      console.log("Connected to server");
       newSocket.emit("join-room", { roomId, userName });
     });
 
+    // FIXED: Proper initialization of tab contents
     newSocket.on("room-joined", (data) => {
       setRoomData(data.room);
       setCurrentUser(data.user);
       setUsers(data.users);
-      if (data.room.code) {
-        setCode(data.room.code);
-      }
-      if (data.room.language) {
-        setEditorLanguage(data.room.language);
-      }
+      setTabs(data.room.tabs);
+      setActiveTab(data.room.activeTab);
+
+      // Initialize tab contents properly
+      const initialContents = {};
+      const initialSavedContents = {};
+
+      data.room.tabs.forEach((tab) => {
+        initialContents[tab.id] = tab.code;
+        initialSavedContents[tab.id] = tab.code;
+      });
+
+      setTabContents(initialContents);
+      setLastSavedContents(initialSavedContents);
       setLoading(false);
+    });
+
+    // FIXED: Handle tab creation properly
+    newSocket.on("tab-created", (data) => {
+      setTabs((prev) => {
+        const exists = prev.some((t) => t.id === data.tab.id);
+        if (exists) return prev;
+        return [...prev, data.tab];
+      });
+
+      // Initialize content for new tab
+      setTabContents((prev) => ({
+        ...prev,
+        [data.tab.id]: data.tab.code,
+      }));
+
+      setLastSavedContents((prev) => ({
+        ...prev,
+        [data.tab.id]: data.tab.code,
+      }));
+    });
+
+    // FIXED: Handle code updates more carefully
+    newSocket.on("code-update", (data) => {
+      if (!data.tabId) return;
+
+      isUpdatingFromServer.current = true;
+
+      // Update both local and saved content for the specific tab
+      setTabContents((prev) => ({
+        ...prev,
+        [data.tabId]: data.code,
+      }));
+
+      setLastSavedContents((prev) => ({
+        ...prev,
+        [data.tabId]: data.code,
+      }));
+
+      setTimeout(() => {
+        isUpdatingFromServer.current = false;
+      }, 100);
+    });
+
+    // FIXED: Handle tab switching better
+    newSocket.on("tab-switched-response", (data) => {
+      if (!data.tabId) return;
+
+      isUpdatingFromServer.current = true;
+
+      // Update content for the specific tab
+      setTabContents((prev) => ({
+        ...prev,
+        [data.tabId]: data.code,
+      }));
+
+      setLastSavedContents((prev) => ({
+        ...prev,
+        [data.tabId]: data.code,
+      }));
+
+      // Update tab language if provided
+      if (data.language) {
+        setTabs((prev) =>
+          prev.map((tab) =>
+            tab.id === data.tabId ? { ...tab, language: data.language } : tab
+          )
+        );
+      }
+
+      setTimeout(() => {
+        isUpdatingFromServer.current = false;
+      }, 100);
+    });
+
+    // Handle user tab switches (for UI indication only)
+    newSocket.on("user-tab-switched", (data) => {
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === data.userId ? { ...user, activeTab: data.tabId } : user
+        )
+      );
     });
 
     newSocket.on("user-joined", (data) => {
@@ -138,12 +233,13 @@ export default function RoomPage() {
       ]);
     });
 
-    newSocket.on("code-update", (data) => {
-      setCode(data.code);
-    });
-
-    newSocket.on("language-change", (data) => {
-      setEditorLanguage(data.language);
+    // FIXED: Handle language changes for specific tabs
+    newSocket.on("language-changed", (data) => {
+      setTabs((prev) =>
+        prev.map((tab) =>
+          tab.id === data.tabId ? { ...tab, language: data.language } : tab
+        )
+      );
     });
 
     newSocket.on("chat-message", (data) => {
@@ -165,27 +261,86 @@ export default function RoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // FIXED: Handle code changes with proper debouncing
   const handleCodeChange = (newCode) => {
-    setCode(newCode);
+    if (isUpdatingFromServer.current) return;
 
+    // Update local tab content immediately
+    setTabContents((prev) => ({
+      ...prev,
+      [activeTab]: newCode,
+    }));
+
+    // Debounce server updates
     if (socket) {
       socket.emit("code-change", {
         roomId,
+        tabId: activeTab,
         code: newCode,
-        operation: "update",
       });
     }
   };
 
+  // FIXED: Handle language changes for specific tabs
   const handleLanguageChange = (languageId) => {
-    setEditorLanguage(languageId);
+    setTabs((prev) =>
+      prev.map((tab) =>
+        tab.id === activeTab ? { ...tab, language: languageId } : tab
+      )
+    );
     setShowLanguageDropdown(false);
 
     if (socket) {
       socket.emit("language-change", {
         roomId,
         language: languageId,
+        tabId: activeTab,
       });
+    }
+  };
+
+  const createNewTab = () => {
+    const newTabId = `tab-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    const newTab = {
+      id: newTabId,
+      name: `Tab ${tabs.length + 1}`,
+      code: `// New tab created\n// Start coding here...\n`,
+      language: "javascript",
+    };
+
+    if (socket) {
+      socket.emit("create-tab", {
+        roomId,
+        tab: newTab,
+      });
+    }
+  };
+
+  // FIXED: Handle tab switching with proper content management
+  const switchTab = (tabId) => {
+    if (tabId === activeTab) return;
+
+    // Save current tab content before switching
+    const currentContent = tabContents[activeTab];
+    if (currentContent !== lastSavedContents[activeTab]) {
+      // Sync current content to server before switching
+      if (socket) {
+        socket.emit("code-change", {
+          roomId,
+          tabId: activeTab,
+          code: currentContent,
+        });
+      }
+    }
+
+    // Switch to new tab
+    setActiveTab(tabId);
+
+    // Request current content for the new tab
+    if (socket) {
+      socket.emit("switch-tab", { roomId, tabId });
     }
   };
 
@@ -212,9 +367,12 @@ export default function RoomPage() {
   };
 
   const downloadCode = () => {
-    const language = languages.find((lang) => lang.id === editorLanguage);
-    const filename = `code${language?.ext || ".txt"}`;
-    const blob = new Blob([code], { type: "text/plain" });
+    const currentTab = tabs.find((tab) => tab.id === activeTab);
+    const language = languages.find((lang) => lang.id === currentTab?.language);
+    const filename = `${currentTab?.name || "code"}${language?.ext || ".txt"}`;
+    const blob = new Blob([tabContents[activeTab] || ""], {
+      type: "text/plain",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -229,6 +387,17 @@ export default function RoomPage() {
     }
     localStorage.removeItem("userName");
     router.push("/");
+  };
+
+  // Get current tab content safely
+  const getCurrentTabContent = () => {
+    return tabContents[activeTab] || "";
+  };
+
+  // Get current tab language safely
+  const getCurrentTabLanguage = () => {
+    const tab = tabs.find((t) => t.id === activeTab);
+    return tab?.language || "javascript";
   };
 
   if (loading) {
@@ -281,8 +450,8 @@ export default function RoomPage() {
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Code className="w-4 h-4" />
                 <span className="capitalize">
-                  {languages.find((lang) => lang.id === editorLanguage)?.name ||
-                    editorLanguage}
+                  {languages.find((lang) => lang.id === getCurrentTabLanguage())
+                    ?.name || getCurrentTabLanguage()}
                 </span>
                 <span>•</span>
                 <button
@@ -309,8 +478,8 @@ export default function RoomPage() {
               >
                 <Code className="w-4 h-4" />
                 <span>
-                  {languages.find((lang) => lang.id === editorLanguage)?.name ||
-                    "Language"}
+                  {languages.find((lang) => lang.id === getCurrentTabLanguage())
+                    ?.name || "Language"}
                 </span>
                 <ChevronDown className="w-4 h-4" />
               </button>
@@ -322,7 +491,7 @@ export default function RoomPage() {
                       key={lang.id}
                       onClick={() => handleLanguageChange(lang.id)}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
-                        editorLanguage === lang.id
+                        getCurrentTabLanguage() === lang.id
                           ? "bg-slate-600 text-purple-400"
                           : ""
                       }`}
@@ -395,122 +564,166 @@ export default function RoomPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex w-full overflow-x-hidden">
-        {/* Code Editor */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-6">
-            <div className="h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-              <MonacoEditor
-                value={code}
-                onChange={handleCodeChange}
-                language={editorLanguage}
-                theme={editorTheme}
-                options={{
-                  fontSize: fontSize,
-                  minimap: { enabled: true },
-                  wordWrap: "on",
-                  automaticLayout: true,
-                }}
-              />
+      <div className="flex-1 flex flex-col w-full overflow-x-hidden">
+        {/* Tab Bar */}
+        <div className="bg-slate-700 border-b border-slate-600 px-6 py-2">
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => switchTab(tab.id)}
+                  className={`px-4 py-2 text-sm rounded-t-lg whitespace-nowrap transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-slate-800 text-white border-b-2 border-purple-500"
+                      : "bg-slate-600 text-gray-300 hover:bg-slate-700 hover:text-white"
+                  }`}
+                >
+                  {tab.name}
+                  <span className="ml-2 text-xs text-gray-400">
+                    {languages.find((lang) => lang.id === tab.language)?.name ||
+                      tab.language}
+                  </span>
+                </button>
+              ))}
             </div>
+            <button
+              onClick={createNewTab}
+              className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded transition-colors"
+              title="Create New Tab"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col">
-          {/* Users Panel */}
-          {showUsers && (
-            <div className="flex-1 border-b border-slate-700">
-              <div className="p-4 border-b border-slate-600">
-                <h3 className="font-semibold flex items-center space-x-2">
-                  <Users className="w-4 h-4" />
-                  <span>Users ({users.length})</span>
-                </h3>
-              </div>
-              <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center space-x-3 p-2 bg-slate-700 rounded-lg"
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: user.color }}
-                    ></div>
-                    <span className="flex-1 text-sm">
-                      {user.name}
-                      {user.id === currentUser?.id && " (You)"}
-                    </span>
-                  </div>
-                ))}
+        <div className="flex-1 flex">
+          {/* Code Editor */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 p-6">
+              <div className="h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                <MonacoEditor
+                  key={activeTab} // Force re-render when tab changes
+                  value={getCurrentTabContent()}
+                  onChange={handleCodeChange}
+                  language={getCurrentTabLanguage()}
+                  theme={editorTheme}
+                  options={{
+                    fontSize: fontSize,
+                    minimap: { enabled: true },
+                    wordWrap: "on",
+                    automaticLayout: true,
+                  }}
+                />
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Chat Panel */}
-          {showChat && (
-            <div className="h-full flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-slate-600">
-                <h3 className="font-semibold flex items-center space-x-2">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat</span>
-                </h3>
-              </div>
-
-              <div className="flex-1 p-4 space-y-3 overflow-y-auto min-h-0">
-                {messages.map((message) => (
-                  <div key={message.id} className="text-sm">
-                    {message.type === "system" ? (
-                      <div className="text-gray-400 italic text-center">
-                        {message.message}
+          {/* Sidebar */}
+          <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col">
+            {/* Users Panel */}
+            {showUsers && (
+              <div className="flex-1 border-b border-slate-700">
+                <div className="p-4 border-b border-slate-600">
+                  <h3 className="font-semibold flex items-center space-x-2">
+                    <Users className="w-4 h-4" />
+                    <span>Users ({users.length})</span>
+                  </h3>
+                </div>
+                <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                  {users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center space-x-3 p-2 bg-slate-700 rounded-lg"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: user.color }}
+                      ></div>
+                      <div className="flex-1">
+                        <span className="text-sm">
+                          {user.name}
+                          {user.id === currentUser?.id && " (You)"}
+                        </span>
+                        {user.activeTab && (
+                          <div className="text-xs text-gray-400">
+                            Tab:{" "}
+                            {tabs.find((t) => t.id === user.activeTab)?.name ||
+                              user.activeTab}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: message.userColor }}
-                          ></div>
-                          <span className="font-medium text-gray-300">
-                            {message.userName}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(message.timestamp).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <div className="text-gray-100 ml-4">
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Chat Panel */}
+            {showChat && (
+              <div className="h-full flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-slate-600">
+                  <h3 className="font-semibold flex items-center space-x-2">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Chat</span>
+                  </h3>
+                </div>
+
+                <div className="flex-1 p-4 space-y-3 overflow-y-auto min-h-0">
+                  {messages.map((message) => (
+                    <div key={message.id} className="text-sm">
+                      {message.type === "system" ? (
+                        <div className="text-gray-400 italic text-center">
                           {message.message}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <form
-                onSubmit={handleSendMessage}
-                className="p-4 border-t border-slate-600"
-              >
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!chatMessage.trim()}
-                    className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 p-2 rounded-lg transition-colors"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                      ) : (
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: message.userColor }}
+                            ></div>
+                            <span className="font-medium text-gray-300">
+                              {message.userName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(message.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <div className="text-gray-100 ml-4">
+                            {message.message}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
                 </div>
-              </form>
-            </div>
-          )}
+
+                <form
+                  onSubmit={handleSendMessage}
+                  className="p-4 border-t border-slate-600"
+                >
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatMessage.trim()}
+                      className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 p-2 rounded-lg transition-colors"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
