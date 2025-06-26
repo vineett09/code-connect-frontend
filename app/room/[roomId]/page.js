@@ -23,6 +23,7 @@ import {
   CheckCircle,
   Clock,
   Menu,
+  Settings,
 } from "lucide-react";
 
 import MonacoEditor from "@/components/MonacoEditor";
@@ -37,7 +38,7 @@ export default function RoomPage() {
   const [messages, setMessages] = useState([]);
   const [chatMessage, setChatMessage] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeSidebarTab, setActiveSidebarTab] = useState("users"); // 'users' or 'chat'
+  const [activeSidebarTab, setActiveSidebarTab] = useState("users"); // 'users', 'chat', or 'settings'
   const [showOutput, setShowOutput] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,7 +66,6 @@ export default function RoomPage() {
   const isUpdatingFromServer = useRef(false);
   const editorRef = useRef(null);
   const resizeRef = useRef(null);
-
   // Judge0 Language ID mapping
   const judge0Languages = {
     javascript: 63, // Node.js
@@ -544,7 +544,6 @@ export default function RoomPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       {/* Header */}
@@ -583,8 +582,6 @@ export default function RoomPage() {
                   )}
                 </button>
               </div>
-
-              {/* Mobile room info */}
               <div className="sm:hidden flex items-center gap-2 text-xs text-gray-400">
                 <button
                   onClick={copyRoomId}
@@ -625,7 +622,6 @@ export default function RoomPage() {
               )}
               <span className="hidden xs:inline">Run</span>
             </button>
-            {/* Mobile menu button */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
@@ -770,7 +766,7 @@ export default function RoomPage() {
           </div>
 
           <div className="flex-1 flex flex-col p-1 sm:p-2 md:p-4 overflow-hidden">
-            <div className="flex-1 h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden relative">
+            <div className="flex-1 h-[calc(100vh-10rem)] bg-slate-800 rounded-lg border border-slate-700 overflow-hidden relative">
               <MonacoEditor
                 key={activeTab}
                 value={getCurrentTabContent()}
@@ -790,6 +786,7 @@ export default function RoomPage() {
                 }}
               />
             </div>
+
             {showTabNameModal && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                 <div className="bg-slate-800 p-6 rounded-lg shadow-xl border border-slate-700 w-96 max-w-[90vw]">
@@ -985,13 +982,13 @@ export default function RoomPage() {
 
         {/* Sidebar */}
         <aside
-          className={`
-      flex flex-col bg-slate-800 border-l border-slate-700 transition-all duration-300 ease-in-out
-      ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
-      lg:w-80 fixed lg:static right-0 top-0 h-full lg:h-auto z-40 lg:z-auto
-      ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
-      lg:flex-shrink-0
-    `}
+          className={`flex flex-col bg-slate-800 border-l border-slate-700 transition-all duration-300 ease-in-out
+          ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
+          lg:w-80 fixed lg:static right-0 top-0 h-full lg:h-auto z-40 lg:z-auto
+          ${
+            isSidebarOpen ? "translate-x-0" : "translate-x-full"
+          } lg:translate-x-0
+          lg:flex-shrink-0`}
         >
           <div className="p-2 border-b border-slate-700 flex items-center justify-between">
             <div className="flex bg-slate-700 p-1 rounded-md">
@@ -1014,6 +1011,17 @@ export default function RoomPage() {
                 }`}
               >
                 Chat
+              </button>
+              {/* Show settings tab button only on small screens */}
+              <button
+                onClick={() => setActiveSidebarTab("settings")}
+                className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded lg:hidden ${
+                  activeSidebarTab === "settings"
+                    ? "bg-slate-600 text-white"
+                    : "text-gray-400 hover:bg-slate-600/50"
+                }`}
+              >
+                <Settings className="w-4 h-4" />
               </button>
             </div>
             <button
@@ -1129,6 +1137,62 @@ export default function RoomPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {activeSidebarTab === "settings" && (
+            <div className="flex-1 flex flex-col overflow-hidden lg:hidden">
+              <div className="p-3 sm:p-4 border-b border-slate-700">
+                <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
+                  <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Editor Settings</span>
+                </h3>
+              </div>
+              <div className="flex-1 p-3 sm:p-4 space-y-4 overflow-y-auto">
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400">Language</label>
+                  <div className="relative">
+                    <select
+                      value={getCurrentTabLanguage()}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    >
+                      {languages.map((lang) => (
+                        <option key={lang.id} value={lang.id}>
+                          {lang.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400">Theme</label>
+                  <div className="relative">
+                    <select
+                      value={editorTheme}
+                      onChange={(e) => setEditorTheme(e.target.value)}
+                      className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    >
+                      {themes.map((theme) => (
+                        <option key={theme.id} value={theme.id}>
+                          {theme.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={downloadCode}
+                    className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Code</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </aside>
