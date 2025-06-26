@@ -10,9 +10,6 @@ import {
   User,
   Copy,
   Check,
-  ArrowLeft,
-  Globe,
-  Lock,
   Settings,
 } from "lucide-react";
 
@@ -31,6 +28,21 @@ export default function EnterRoom() {
   const [error, setError] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+  // Consistent language list with RoomPage
+  const languages = [
+    { id: "javascript", name: "JavaScript", ext: ".js" },
+    { id: "python", name: "Python", ext: ".py" },
+    { id: "cpp", name: "C++", ext: ".cpp" },
+    { id: "c", name: "C", ext: ".c" },
+    { id: "csharp", name: "C#", ext: ".cs" },
+    { id: "php", name: "PHP", ext: ".php" },
+    { id: "go", name: "Go", ext: ".go" },
+    { id: "java", name: "Java", ext: ".java" },
+    { id: "sql", name: "SQL", ext: ".sql" },
+    { id: "bash", name: "Bash", ext: ".sh" },
+    { id: "plaintext", name: "Plain Text", ext: ".txt" },
+  ];
+
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -40,34 +52,10 @@ export default function EnterRoom() {
   }, []);
 
   const generateRoomId = () => {
-    const adjectives = [
-      "swift",
-      "bright",
-      "cosmic",
-      "stellar",
-      "quantum",
-      "neural",
-      "digital",
-      "cyber",
-    ];
-    const nouns = [
-      "coders",
-      "devs",
-      "hackers",
-      "builders",
-      "creators",
-      "innovators",
-      "architects",
-      "wizards",
-    ];
-    const numbers = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, "0");
-
-    const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-
-    return `${randomAdj}-${randomNoun}-${numbers}`;
+    // Using crypto.randomUUID for a highly unique ID
+    const newRoomId = crypto.randomUUID();
+    setGeneratedRoomId(newRoomId);
+    setFormData((prev) => ({ ...prev, roomId: newRoomId }));
   };
 
   const handleInputChange = (e) => {
@@ -80,9 +68,7 @@ export default function EnterRoom() {
   };
 
   const handleGenerateRoom = () => {
-    const newRoomId = generateRoomId();
-    setGeneratedRoomId(newRoomId);
-    setFormData((prev) => ({ ...prev, roomId: newRoomId }));
+    generateRoomId();
   };
 
   const copyToClipboard = async () => {
@@ -111,7 +97,7 @@ export default function EnterRoom() {
           },
           body: JSON.stringify({
             roomId: formData.roomId,
-            roomName: formData.roomName,
+            roomName: formData.roomName || `${formData.userName}'s Room`,
             language: formData.language,
             userName: formData.userName,
           }),
@@ -143,17 +129,6 @@ export default function EnterRoom() {
       setIsLoading(false);
     }
   };
-
-  const languages = [
-    { value: "javascript", label: "JavaScript" },
-    { value: "typescript", label: "TypeScript" },
-    { value: "python", label: "Python" },
-    { value: "java", label: "Java" },
-    { value: "cpp", label: "C++" },
-    { value: "react", label: "React" },
-    { value: "nodejs", label: "Node.js" },
-    { value: "html", label: "HTML/CSS" },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
@@ -201,7 +176,10 @@ export default function EnterRoom() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-slate-800/30 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-slate-800/30 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl"
+          >
             <div className="p-8">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -260,7 +238,7 @@ export default function EnterRoom() {
                       }
                       className="w-full pl-12 pr-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       required
-                      readOnly={formMode === "create" && generatedRoomId}
+                      readOnly={formMode === "create" && !!generatedRoomId}
                     />
                     {formMode === "create" && (
                       <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
@@ -301,7 +279,7 @@ export default function EnterRoom() {
                         name="roomName"
                         value={formData.roomName}
                         onChange={handleInputChange}
-                        placeholder="Give your room a descriptive name"
+                        placeholder="e.g., Project Phoenix Backend"
                         className="w-full px-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       />
                     </div>
@@ -318,11 +296,11 @@ export default function EnterRoom() {
                       >
                         {languages.map((lang) => (
                           <option
-                            key={lang.value}
-                            value={lang.value}
+                            key={lang.id}
+                            value={lang.id}
                             className="bg-slate-800"
                           >
-                            {lang.label}
+                            {lang.name}
                           </option>
                         ))}
                       </select>
@@ -330,45 +308,40 @@ export default function EnterRoom() {
                   </>
                 )}
 
+                {error && (
+                  <p className="text-red-400 text-sm text-center">{error}</p>
+                )}
+
                 {/* Submit Button */}
-                <form
-                  onSubmit={handleSubmit}
-                  className="bg-slate-800/30 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl p-8"
+                <button
+                  type="submit"
+                  disabled={isLoading || !formData.userName || !formData.roomId}
+                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-[1.02] disabled:transform-none shadow-lg hover:shadow-2xl hover:shadow-purple-500/25"
                 >
-                  {/* All your form inputs go here (unchanged) */}
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={
-                      isLoading || !formData.userName || !formData.roomId
-                    }
-                    className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-[1.02] disabled:transform-none shadow-lg hover:shadow-2xl hover:shadow-purple-500/25"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>
-                          {formMode === "join"
-                            ? "Joining Room..."
-                            : "Creating Room..."}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="flex items-center justify-center space-x-2">
-                        {formMode === "join" ? (
-                          <Users className="w-5 h-5" />
-                        ) : (
-                          <Plus className="w-5 h-5" />
-                        )}
-                        <span>
-                          {formMode === "join"
-                            ? "Join Room"
-                            : "Create & Enter Room"}
-                        </span>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>
+                        {formMode === "join"
+                          ? "Joining Room..."
+                          : "Creating Room..."}
                       </span>
-                    )}
-                  </button>
-                </form>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center space-x-2">
+                      {formMode === "join" ? (
+                        <Users className="w-5 h-5" />
+                      ) : (
+                        <Plus className="w-5 h-5" />
+                      )}
+                      <span>
+                        {formMode === "join"
+                          ? "Join Room"
+                          : "Create & Enter Room"}
+                      </span>
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Additional Info */}
@@ -389,7 +362,7 @@ export default function EnterRoom() {
                 </div>
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

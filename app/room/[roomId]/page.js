@@ -15,6 +15,14 @@ import {
   ChevronDown,
   Palette,
   Download,
+  X,
+  Play,
+  Terminal,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Menu,
 } from "lucide-react";
 
 import MonacoEditor from "@/components/MonacoEditor";
@@ -28,50 +36,62 @@ export default function RoomPage() {
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [chatMessage, setChatMessage] = useState("");
-  const [showChat, setShowChat] = useState(true);
-  const [showUsers, setShowUsers] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState("users"); // 'users' or 'chat'
+  const [showOutput, setShowOutput] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState("main");
+  const [showTabNameModal, setShowTabNameModal] = useState(false);
+  const [newTabName, setNewTabName] = useState("");
+  const [tabContents, setTabContents] = useState({});
+  const [lastSavedContents, setLastSavedContents] = useState({});
 
-  // FIXED: Better tab content management
-  const [tabContents, setTabContents] = useState({}); // Local editor content for each tab
-  const [lastSavedContents, setLastSavedContents] = useState({}); // Last known server content
-
-  // Editor specific states
   const [editorLanguage, setEditorLanguage] = useState("javascript");
   const [editorTheme, setEditorTheme] = useState("dark-custom");
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
+  // Judge0 Integration States
+  const [isCompiling, setIsCompiling] = useState(false);
+  const [compilationResult, setCompilationResult] = useState(null);
+  const [customInput, setCustomInput] = useState("");
+  const [outputPanelHeight, setOutputPanelHeight] = useState(250);
+
   const messagesEndRef = useRef(null);
   const isUpdatingFromServer = useRef(false);
   const editorRef = useRef(null);
+  const resizeRef = useRef(null);
 
-  // Supported languages
+  // Judge0 Language ID mapping
+  const judge0Languages = {
+    javascript: 63, // Node.js
+    python: 71, // Python 3
+    cpp: 54, // C++ (GCC 9.2.0)
+    c: 50, // C (GCC 9.2.0)
+    csharp: 51, // C# (Mono 6.6.0.161)
+    php: 68, // PHP (7.4.1)
+    go: 60, // Go (1.13.5)
+    java: 62, // Java (OpenJDK 13.0.1)
+    sql: 82, // SQL (SQLite 3.27.2)
+    bash: 46, // Bash (5.0.0)
+    plaintext: 43, // Plain Text
+  };
+
   const languages = [
     { id: "javascript", name: "JavaScript", ext: ".js" },
-    { id: "typescript", name: "TypeScript", ext: ".ts" },
     { id: "python", name: "Python", ext: ".py" },
     { id: "cpp", name: "C++", ext: ".cpp" },
     { id: "c", name: "C", ext: ".c" },
     { id: "csharp", name: "C#", ext: ".cs" },
     { id: "php", name: "PHP", ext: ".php" },
     { id: "go", name: "Go", ext: ".go" },
-    { id: "html", name: "HTML", ext: ".html" },
-    { id: "css", name: "CSS", ext: ".css" },
-    { id: "scss", name: "SCSS", ext: ".scss" },
-    { id: "json", name: "JSON", ext: ".json" },
-    { id: "xml", name: "XML", ext: ".xml" },
-    { id: "yaml", name: "YAML", ext: ".yml" },
-    { id: "markdown", name: "Markdown", ext: ".md" },
+    { id: "java", name: "Java", ext: ".java" },
     { id: "sql", name: "SQL", ext: ".sql" },
     { id: "bash", name: "Bash", ext: ".sh" },
-    { id: "powershell", name: "PowerShell", ext: ".ps1" },
-    { id: "dockerfile", name: "Dockerfile", ext: "" },
     { id: "plaintext", name: "Plain Text", ext: ".txt" },
   ];
 
@@ -83,7 +103,140 @@ export default function RoomPage() {
     { id: "hc-black", name: "High Contrast Dark" },
   ];
 
-  // FIXED: Update editor language when active tab changes
+  // Judge0 API Functions
+  const compileAndRun = async () => {
+    const currentLang = getCurrentTabLanguage();
+    const languageId = judge0Languages[currentLang];
+
+    if (!languageId) {
+      setCompilationResult({
+        status: "error",
+        message: `Compilation not supported for ${currentLang}`,
+        output: null,
+        stderr: null,
+        compile_output: null,
+      });
+      setShowOutput(true);
+      return;
+    }
+
+    setIsCompiling(true);
+    setShowOutput(true);
+    setCompilationResult(null);
+
+    try {
+      const code = getCurrentTabContent();
+
+      const submitResponse = await fetch(
+        "https://judge0-ce.p.rapidapi.com/submissions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key":
+              process.env.NEXT_PUBLIC_JUDGE0_API_KEY ||
+              "YOUR_RAPIDAPI_KEY_HERE",
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+          body: JSON.stringify({
+            source_code: code,
+            language_id: languageId,
+            stdin: customInput || null,
+          }),
+        }
+      );
+
+      if (!submitResponse.ok) {
+        throw new Error(`HTTP error! status: ${submitResponse.status}`);
+      }
+
+      const submitResult = await submitResponse.json();
+      const submissionId = submitResult.token;
+
+      const pollResult = async () => {
+        const resultResponse = await fetch(
+          `https://judge0-ce.p.rapidapi.com/submissions/${submissionId}`,
+          {
+            headers: {
+              "X-RapidAPI-Key":
+                process.env.NEXT_PUBLIC_JUDGE0_API_KEY ||
+                "YOUR_RAPIDAPI_KEY_HERE",
+              "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+            },
+          }
+        );
+
+        if (!resultResponse.ok) {
+          throw new Error(`HTTP error! status: ${resultResponse.status}`);
+        }
+
+        const result = await resultResponse.json();
+
+        if (result.status.id <= 2) {
+          setTimeout(pollResult, 1000);
+          return;
+        }
+
+        setCompilationResult({
+          status: result.status.description,
+          statusId: result.status.id,
+          output: result.stdout,
+          stderr: result.stderr,
+          compile_output: result.compile_output,
+          time: result.time,
+          memory: result.memory,
+        });
+        setIsCompiling(false);
+      };
+
+      pollResult();
+    } catch (error) {
+      console.error("Compilation error:", error);
+      setCompilationResult({
+        status: "error",
+        message: error.message,
+        output: null,
+        stderr: null,
+        compile_output: null,
+      });
+      setIsCompiling(false);
+    }
+  };
+
+  const getStatusIcon = (statusId) => {
+    if (statusId === 3)
+      return <CheckCircle className="w-5 h-5 text-green-400" />;
+    if (statusId >= 4 && statusId <= 12)
+      return <AlertCircle className="w-5 h-5 text-red-400" />;
+    if (statusId === 5) return <Clock className="w-5 h-5 text-yellow-400" />;
+    return <AlertCircle className="w-5 h-5 text-gray-400" />;
+  };
+
+  const isLanguageSupported = (lang) => {
+    return judge0Languages.hasOwnProperty(lang);
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = outputPanelHeight;
+
+    const handleMouseMove = (e) => {
+      const newHeight = startHeight - (e.clientY - startY);
+      setOutputPanelHeight(
+        Math.max(100, Math.min(window.innerHeight * 0.7, newHeight))
+      );
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
     if (tab?.language) {
@@ -91,7 +244,6 @@ export default function RoomPage() {
     }
   }, [activeTab, tabs]);
 
-  // Initialize socket connection
   useEffect(() => {
     const newSocket = io("http://localhost:5000");
     setSocket(newSocket);
@@ -103,7 +255,6 @@ export default function RoomPage() {
       newSocket.emit("join-room", { roomId, userName });
     });
 
-    // FIXED: Proper initialization of tab contents
     newSocket.on("room-joined", (data) => {
       setRoomData(data.room);
       setCurrentUser(data.user);
@@ -111,80 +262,66 @@ export default function RoomPage() {
       setTabs(data.room.tabs);
       setActiveTab(data.room.activeTab);
 
-      // Initialize tab contents properly
       const initialContents = {};
       const initialSavedContents = {};
-
       data.room.tabs.forEach((tab) => {
         initialContents[tab.id] = tab.code;
         initialSavedContents[tab.id] = tab.code;
       });
-
       setTabContents(initialContents);
       setLastSavedContents(initialSavedContents);
       setLoading(false);
     });
 
-    // FIXED: Handle tab creation properly
     newSocket.on("tab-created", (data) => {
       setTabs((prev) => {
         const exists = prev.some((t) => t.id === data.tab.id);
         if (exists) return prev;
         return [...prev, data.tab];
       });
-
-      // Initialize content for new tab
-      setTabContents((prev) => ({
-        ...prev,
-        [data.tab.id]: data.tab.code,
-      }));
-
+      setTabContents((prev) => ({ ...prev, [data.tab.id]: data.tab.code }));
       setLastSavedContents((prev) => ({
         ...prev,
         [data.tab.id]: data.tab.code,
       }));
     });
 
-    // FIXED: Handle code updates more carefully
+    newSocket.on("tab-deleted", (data) => {
+      const { tabId, newActiveTab } = data;
+      setTabs((prev) => prev.filter((t) => t.id !== tabId));
+      setTabContents((prev) => {
+        const newContents = { ...prev };
+        delete newContents[tabId];
+        return newContents;
+      });
+      setLastSavedContents((prev) => {
+        const newSaved = { ...prev };
+        delete newSaved[tabId];
+        return newSaved;
+      });
+      setActiveTab((currentActiveTab) => {
+        if (currentActiveTab === tabId) {
+          return newActiveTab;
+        }
+        return currentActiveTab;
+      });
+    });
+
     newSocket.on("code-update", (data) => {
       if (!data.tabId) return;
-
       isUpdatingFromServer.current = true;
-
-      // Update both local and saved content for the specific tab
-      setTabContents((prev) => ({
-        ...prev,
-        [data.tabId]: data.code,
-      }));
-
-      setLastSavedContents((prev) => ({
-        ...prev,
-        [data.tabId]: data.code,
-      }));
-
+      setTabContents((prev) => ({ ...prev, [data.tabId]: data.code }));
+      setLastSavedContents((prev) => ({ ...prev, [data.tabId]: data.code }));
       setTimeout(() => {
         isUpdatingFromServer.current = false;
       }, 100);
     });
 
-    // FIXED: Handle tab switching better
     newSocket.on("tab-switched-response", (data) => {
       if (!data.tabId) return;
-
       isUpdatingFromServer.current = true;
-
-      // Update content for the specific tab
-      setTabContents((prev) => ({
-        ...prev,
-        [data.tabId]: data.code,
-      }));
-
-      setLastSavedContents((prev) => ({
-        ...prev,
-        [data.tabId]: data.code,
-      }));
-
-      // Update tab language if provided
+      setTabContents((prev) => ({ ...prev, [data.tabId]: data.code }));
+      setLastSavedContents((prev) => ({ ...prev, [data.tabId]: data.code }));
       if (data.language) {
         setTabs((prev) =>
           prev.map((tab) =>
@@ -192,13 +329,11 @@ export default function RoomPage() {
           )
         );
       }
-
       setTimeout(() => {
         isUpdatingFromServer.current = false;
       }, 100);
     });
 
-    // Handle user tab switches (for UI indication only)
     newSocket.on("user-tab-switched", (data) => {
       setUsers((prev) =>
         prev.map((user) =>
@@ -233,7 +368,6 @@ export default function RoomPage() {
       ]);
     });
 
-    // FIXED: Handle language changes for specific tabs
     newSocket.on("language-changed", (data) => {
       setTabs((prev) =>
         prev.map((tab) =>
@@ -256,32 +390,18 @@ export default function RoomPage() {
     };
   }, [roomId, router]);
 
-  // Auto-scroll chat to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // FIXED: Handle code changes with proper debouncing
   const handleCodeChange = (newCode) => {
     if (isUpdatingFromServer.current) return;
-
-    // Update local tab content immediately
-    setTabContents((prev) => ({
-      ...prev,
-      [activeTab]: newCode,
-    }));
-
-    // Debounce server updates
+    setTabContents((prev) => ({ ...prev, [activeTab]: newCode }));
     if (socket) {
-      socket.emit("code-change", {
-        roomId,
-        tabId: activeTab,
-        code: newCode,
-      });
+      socket.emit("code-change", { roomId, tabId: activeTab, code: newCode });
     }
   };
 
-  // FIXED: Handle language changes for specific tabs
   const handleLanguageChange = (languageId) => {
     setTabs((prev) =>
       prev.map((tab) =>
@@ -289,7 +409,6 @@ export default function RoomPage() {
       )
     );
     setShowLanguageDropdown(false);
-
     if (socket) {
       socket.emit("language-change", {
         roomId,
@@ -300,32 +419,43 @@ export default function RoomPage() {
   };
 
   const createNewTab = () => {
+    setShowTabNameModal(true);
+    setNewTabName(""); // Reset input
+  };
+  const handleCreateTabWithName = () => {
+    if (!newTabName.trim()) {
+      alert("Please enter a tab name");
+      return;
+    }
+
     const newTabId = `tab-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
     const newTab = {
       id: newTabId,
-      name: `Tab ${tabs.length + 1}`,
-      code: `// New tab created\n// Start coding here...\n`,
+      name: newTabName.trim(),
+      code: `// ${newTabName.trim()}\n// Start coding here...\n`,
       language: "javascript",
     };
 
     if (socket) {
-      socket.emit("create-tab", {
-        roomId,
-        tab: newTab,
-      });
+      socket.emit("create-tab", { roomId, tab: newTab });
+    }
+
+    setShowTabNameModal(false);
+    setNewTabName("");
+  };
+
+  const handleDeleteTab = (tabIdToDelete) => {
+    if (socket && tabIdToDelete !== "main") {
+      socket.emit("delete-tab", { roomId, tabId: tabIdToDelete });
     }
   };
 
-  // FIXED: Handle tab switching with proper content management
   const switchTab = (tabId) => {
     if (tabId === activeTab) return;
-
-    // Save current tab content before switching
     const currentContent = tabContents[activeTab];
     if (currentContent !== lastSavedContents[activeTab]) {
-      // Sync current content to server before switching
       if (socket) {
         socket.emit("code-change", {
           roomId,
@@ -334,11 +464,7 @@ export default function RoomPage() {
         });
       }
     }
-
-    // Switch to new tab
     setActiveTab(tabId);
-
-    // Request current content for the new tab
     if (socket) {
       socket.emit("switch-tab", { roomId, tabId });
     }
@@ -347,12 +473,7 @@ export default function RoomPage() {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim() || !socket) return;
-
-    socket.emit("chat-message", {
-      roomId,
-      message: chatMessage.trim(),
-    });
-
+    socket.emit("chat-message", { roomId, message: chatMessage.trim() });
     setChatMessage("");
   };
 
@@ -389,12 +510,7 @@ export default function RoomPage() {
     router.push("/");
   };
 
-  // Get current tab content safely
-  const getCurrentTabContent = () => {
-    return tabContents[activeTab] || "";
-  };
-
-  // Get current tab language safely
+  const getCurrentTabContent = () => tabContents[activeTab] || "";
   const getCurrentTabLanguage = () => {
     const tab = tabs.find((t) => t.id === activeTab);
     return tab?.language || "javascript";
@@ -402,29 +518,27 @@ export default function RoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Joining room...</p>
-        </div>
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center">
+        <Loader2 className="w-16 h-16 animate-spin text-purple-500 mb-4" />
+        <p className="text-gray-400 text-lg">Joining room...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
+        <div className="text-center bg-slate-800 p-8 rounded-lg shadow-2xl">
           <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-red-400 text-2xl">!</span>
+            <AlertCircle className="text-red-400 w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Error</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <h2 className="text-3xl font-bold mb-2 text-white">Error</h2>
+          <p className="text-gray-400 mb-6 max-w-sm">{error}</p>
           <button
             onClick={leaveRoom}
-            className="bg-purple-500 hover:bg-purple-600 px-6 py-2 rounded-lg transition-colors"
+            className="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition-all duration-200"
           >
-            Go Back
+            Go Back to Home
           </button>
         </div>
       </div>
@@ -432,312 +546,610 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col overflow-x-hidden w-full">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <header className="bg-slate-800 border-b border-slate-700 px-2 sm:px-4 py-2 sm:py-3 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={leaveRoom}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 shrink-0"
+              title="Leave Room"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-sm sm:text-lg font-bold truncate">
                 {roomData?.name || "Untitled Room"}
               </h1>
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <Code className="w-4 h-4" />
-                <span className="capitalize">
+              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+                <Code className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="capitalize truncate">
                   {languages.find((lang) => lang.id === getCurrentTabLanguage())
                     ?.name || getCurrentTabLanguage()}
                 </span>
-                <span>•</span>
+                <span className="text-gray-600">•</span>
                 <button
                   onClick={copyRoomId}
-                  className="flex items-center space-x-1 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors truncate"
                 >
-                  <span>ID: {roomId}</span>
+                  <span className="truncate max-w-20 sm:max-w-none">
+                    {roomId}
+                  </span>
                   {copied ? (
-                    <Check className="w-4 h-4 text-green-400" />
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 shrink-0" />
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                  )}
+                </button>
+              </div>
+
+              {/* Mobile room info */}
+              <div className="sm:hidden flex items-center gap-2 text-xs text-gray-400">
+                <button
+                  onClick={copyRoomId}
+                  className="flex items-center gap-1 hover:text-white transition-colors"
+                >
+                  <span className="truncate max-w-16">{roomId}</span>
+                  {copied ? (
+                    <Check className="w-3 h-3 text-green-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
                   )}
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            {/* Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-              >
-                <Code className="w-4 h-4" />
-                <span>
-                  {languages.find((lang) => lang.id === getCurrentTabLanguage())
-                    ?.name || "Language"}
-                </span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-
-              {showLanguageDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.id}
-                      onClick={() => handleLanguageChange(lang.id)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
-                        getCurrentTabLanguage() === lang.id
-                          ? "bg-slate-600 text-purple-400"
-                          : ""
-                      }`}
-                    >
-                      {lang.name}
-                    </button>
-                  ))}
-                </div>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <button
+              onClick={compileAndRun}
+              disabled={
+                isCompiling || !isLanguageSupported(getCurrentTabLanguage())
+              }
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold ${
+                isLanguageSupported(getCurrentTabLanguage())
+                  ? "bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-wait"
+                  : "bg-gray-600 cursor-not-allowed"
+              }`}
+              title={
+                !isLanguageSupported(getCurrentTabLanguage())
+                  ? "Language not supported for compilation"
+                  : "Compile and Run Code"
+              }
+            >
+              {isCompiling ? (
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+              ) : (
+                <Play className="w-3 h-3 sm:w-4 sm:h-4" />
               )}
-            </div>
-
-            {/* Theme Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowThemeDropdown(!showThemeDropdown)}
-                className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-              >
-                <Palette className="w-4 h-4" />
-                <ChevronDown className="w-4 h-4" />
-              </button>
-
-              {showThemeDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
-                  {themes.map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => {
-                        setEditorTheme(theme.id);
-                        setShowThemeDropdown(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
-                        editorTheme === theme.id
-                          ? "bg-slate-600 text-purple-400"
-                          : ""
-                      }`}
-                    >
-                      {theme.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Download Code */}
-            <button
-              onClick={downloadCode}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
-              title="Download Code"
-            >
-              <Download className="w-5 h-5" />
+              <span className="hidden xs:inline">Run</span>
             </button>
-
+            {/* Mobile menu button */}
             <button
-              onClick={() => setShowUsers(!showUsers)}
-              className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
+              title="Toggle Sidebar"
             >
-              <Users className="w-4 h-4" />
-              <span>{users.length}</span>
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-
-            <button
-              onClick={() => setShowChat(!showChat)}
-              className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Chat</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col w-full overflow-x-hidden">
-        {/* Tab Bar */}
-        <div className="bg-slate-700 border-b border-slate-600 px-6 py-2">
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1 overflow-x-auto">
-              {tabs.map((tab) => (
+            <div className="hidden md:flex items-center gap-2">
+              <div className="relative">
                 <button
-                  key={tab.id}
-                  onClick={() => switchTab(tab.id)}
-                  className={`px-4 py-2 text-sm rounded-t-lg whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-slate-800 text-white border-b-2 border-purple-500"
-                      : "bg-slate-600 text-gray-300 hover:bg-slate-700 hover:text-white"
-                  }`}
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
                 >
-                  {tab.name}
-                  <span className="ml-2 text-xs text-gray-400">
-                    {languages.find((lang) => lang.id === tab.language)?.name ||
-                      tab.language}
+                  <Code className="w-4 h-4" />
+                  <span className="hidden lg:inline">
+                    {languages.find(
+                      (lang) => lang.id === getCurrentTabLanguage()
+                    )?.name || "Language"}
                   </span>
+                  <ChevronDown className="w-4 h-4" />
                 </button>
-              ))}
+                {showLanguageDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.id}
+                        onClick={() => handleLanguageChange(lang.id)}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors flex items-center justify-between ${
+                          getCurrentTabLanguage() === lang.id
+                            ? "bg-slate-600 text-purple-400 font-semibold"
+                            : ""
+                        }`}
+                      >
+                        <span>{lang.name}</span>
+                        {isLanguageSupported(lang.id) && (
+                          <Play className="w-3 h-3 text-green-400" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
+                  title="Change Theme"
+                >
+                  <Palette className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {showThemeDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
+                    {themes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => {
+                          setEditorTheme(theme.id);
+                          setShowThemeDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
+                          editorTheme === theme.id
+                            ? "bg-slate-600 text-purple-400 font-semibold"
+                            : ""
+                        }`}
+                      >
+                        {theme.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={downloadCode}
+                className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700"
+                title="Download Code"
+              >
+                <Download className="w-5 h-5" />
+              </button>
             </div>
+
             <button
-              onClick={createNewTab}
-              className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded transition-colors"
-              title="Create New Tab"
+              onClick={() => setShowOutput(!showOutput)}
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                showOutput
+                  ? "bg-purple-600 text-white"
+                  : "bg-slate-700 hover:bg-slate-600"
+              }`}
             >
-              <Plus className="w-4 h-4" />
+              <Terminal className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Output</span>
             </button>
           </div>
         </div>
+      </header>
 
-        <div className="flex-1 flex">
-          {/* Code Editor */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 p-6">
-              <div className="h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-                <MonacoEditor
-                  key={activeTab} // Force re-render when tab changes
-                  value={getCurrentTabContent()}
-                  onChange={handleCodeChange}
-                  language={getCurrentTabLanguage()}
-                  theme={editorTheme}
-                  options={{
-                    fontSize: fontSize,
-                    minimap: { enabled: true },
-                    wordWrap: "on",
-                    automaticLayout: true,
-                  }}
-                />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Tabs */}
+          <div className="shrink-0 bg-slate-800 border-b border-slate-700 px-1 sm:px-2 md:px-4">
+            <div className="flex items-center min-h-0">
+              <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto py-1.5 sm:py-2 flex-1 min-w-0 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => switchTab(tab.id)}
+                    className={`flex items-center group py-1.5 sm:py-2.5 text-xs sm:text-sm rounded-md whitespace-nowrap transition-all duration-200 shrink-0 ${
+                      activeTab === tab.id
+                        ? "bg-slate-700 text-white font-semibold pl-2 sm:pl-4 pr-1 sm:pr-2"
+                        : "bg-transparent text-gray-300 hover:bg-slate-700/50 hover:text-white px-2 sm:px-4"
+                    }`}
+                  >
+                    <span className="truncate max-w-20 sm:max-w-none">
+                      {tab.name}
+                    </span>
+                    {tab.id !== "main" && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTab(tab.id);
+                        }}
+                        className="ml-1 sm:ml-2 p-0.5 sm:p-1 rounded-full text-gray-400 opacity-50 group-hover:opacity-100 hover:!opacity-100 hover:bg-red-500 hover:text-white transition-all shrink-0"
+                        title="Delete Tab"
+                      >
+                        <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
+              <button
+                onClick={createNewTab}
+                className="ml-1 sm:ml-2 p-1 sm:p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors shrink-0"
+                title="Create New Tab"
+              >
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col">
-            {/* Users Panel */}
-            {showUsers && (
-              <div className="flex-1 border-b border-slate-700">
-                <div className="p-4 border-b border-slate-600">
-                  <h3 className="font-semibold flex items-center space-x-2">
-                    <Users className="w-4 h-4" />
-                    <span>Users ({users.length})</span>
+          <div className="flex-1 flex flex-col p-1 sm:p-2 md:p-4 overflow-hidden">
+            <div className="flex-1 h-full bg-slate-800 rounded-lg border border-slate-700 overflow-hidden relative">
+              <MonacoEditor
+                key={activeTab}
+                value={getCurrentTabContent()}
+                onChange={handleCodeChange}
+                language={getCurrentTabLanguage()}
+                theme={editorTheme}
+                options={{
+                  fontSize: window.innerWidth < 640 ? 12 : fontSize,
+                  minimap: { enabled: window.innerWidth >= 768 },
+                  wordWrap: "on",
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                  roundedSelection: false,
+                  lineNumbers: window.innerWidth < 640 ? "off" : "on",
+                  folding: window.innerWidth >= 768,
+                  overviewRulerLanes: window.innerWidth >= 768 ? 3 : 0,
+                }}
+              />
+            </div>
+            {showTabNameModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-slate-800 p-6 rounded-lg shadow-xl border border-slate-700 w-96 max-w-[90vw]">
+                  <h3 className="text-lg font-semibold mb-4 text-white">
+                    Create New Tab
                   </h3>
-                </div>
-                <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
-                  {users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center space-x-3 p-2 bg-slate-700 rounded-lg"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: user.color }}
-                      ></div>
-                      <div className="flex-1">
-                        <span className="text-sm">
-                          {user.name}
-                          {user.id === currentUser?.id && " (You)"}
-                        </span>
-                        {user.activeTab && (
-                          <div className="text-xs text-gray-400">
-                            Tab:{" "}
-                            {tabs.find((t) => t.id === user.activeTab)?.name ||
-                              user.activeTab}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Chat Panel */}
-            {showChat && (
-              <div className="h-full flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-slate-600">
-                  <h3 className="font-semibold flex items-center space-x-2">
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Chat</span>
-                  </h3>
-                </div>
-
-                <div className="flex-1 p-4 space-y-3 overflow-y-auto min-h-0">
-                  {messages.map((message) => (
-                    <div key={message.id} className="text-sm">
-                      {message.type === "system" ? (
-                        <div className="text-gray-400 italic text-center">
-                          {message.message}
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <div
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: message.userColor }}
-                            ></div>
-                            <span className="font-medium text-gray-300">
-                              {message.userName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(message.timestamp).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <div className="text-gray-100 ml-4">
-                            {message.message}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                <form
-                  onSubmit={handleSendMessage}
-                  className="p-4 border-t border-slate-600"
-                >
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={chatMessage}
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500"
-                    />
+                  <input
+                    type="text"
+                    value={newTabName}
+                    onChange={(e) => setNewTabName(e.target.value)}
+                    placeholder="Enter tab name..."
+                    className="w-full bg-slate-700 text-white px-4 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all mb-4"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleCreateTabWithName();
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div className="flex gap-3 justify-end">
                     <button
-                      type="submit"
-                      disabled={!chatMessage.trim()}
-                      className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 p-2 rounded-lg transition-colors"
+                      onClick={() => {
+                        setShowTabNameModal(false);
+                        setNewTabName("");
+                      }}
+                      className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
                     >
-                      <Send className="w-4 h-4" />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleCreateTabWithName}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                    >
+                      Create Tab
                     </button>
                   </div>
-                </form>
+                </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Click outside handlers */}
-      {showLanguageDropdown && (
+          {/* Output Panel */}
+          {/* Output Panel responsive fixes */}
+          {showOutput && (
+            <div className="shrink-0 border-t-2 border-slate-700">
+              <div
+                ref={resizeRef}
+                onMouseDown={handleMouseDown}
+                className="h-1 sm:h-2 bg-slate-700 hover:bg-slate-600 cursor-row-resize flex items-center justify-center transition-colors"
+              >
+                <div className="w-8 sm:w-10 h-0.5 sm:h-1 bg-slate-500 rounded-full"></div>
+              </div>
+
+              <div
+                style={{
+                  height:
+                    window.innerWidth < 768
+                      ? Math.min(outputPanelHeight, 200)
+                      : outputPanelHeight,
+                }}
+                className="bg-slate-800 flex flex-col lg:flex-row"
+              >
+                {/* Output Display */}
+                <div className="flex-1 flex flex-col h-full lg:w-2/3">
+                  <div className="p-2 sm:p-3 border-b border-slate-700 flex items-center justify-between">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-300">
+                      Output
+                    </h3>
+                    <button
+                      onClick={() => setShowOutput(false)}
+                      className="p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Close Output Panel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 p-2 sm:p-4 overflow-auto">
+                    {/* Output content remains the same but with responsive text sizes */}
+                    {isCompiling ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-purple-400" />
+                          <span className="text-sm sm:text-base text-gray-300">
+                            Compiling and running...
+                          </span>
+                        </div>
+                      </div>
+                    ) : compilationResult ? (
+                      <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
+                        <div className="flex items-center gap-3">
+                          {getStatusIcon(compilationResult.statusId)}
+                          <span
+                            className={`font-semibold ${
+                              compilationResult.statusId === 3
+                                ? "text-green-400"
+                                : "text-red-400"
+                            }`}
+                          >
+                            {compilationResult.status}
+                          </span>
+                          {compilationResult.time !== null && (
+                            <span className="text-xs text-gray-500">
+                              (time: {compilationResult.time}s, memory:{" "}
+                              {compilationResult.memory}KB)
+                            </span>
+                          )}
+                        </div>
+                        {compilationResult.output && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider">
+                              STDOUT
+                            </h4>
+                            <pre className="bg-slate-900 p-3 rounded border border-slate-700 font-mono text-green-300 whitespace-pre-wrap break-all">
+                              {compilationResult.output}
+                            </pre>
+                          </div>
+                        )}
+                        {compilationResult.stderr && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider">
+                              STDERR
+                            </h4>
+                            <pre className="bg-slate-900 p-3 rounded border border-slate-700 font-mono text-red-400 whitespace-pre-wrap break-all">
+                              {compilationResult.stderr}
+                            </pre>
+                          </div>
+                        )}
+                        {compilationResult.compile_output && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider">
+                              COMPILE OUTPUT
+                            </h4>
+                            <pre className="bg-slate-900 p-3 rounded border border-slate-700 font-mono text-yellow-400 whitespace-pre-wrap break-all">
+                              {compilationResult.compile_output}
+                            </pre>
+                          </div>
+                        )}
+                        {compilationResult.message && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider">
+                              ERROR
+                            </h4>
+                            <pre className="bg-slate-900 p-3 rounded border border-slate-700 font-mono text-red-400 whitespace-pre-wrap break-all">
+                              {compilationResult.message}
+                            </pre>
+                          </div>
+                        )}
+                        {!compilationResult.output &&
+                          !compilationResult.stderr &&
+                          !compilationResult.compile_output &&
+                          !compilationResult.message &&
+                          compilationResult.statusId === 3 && (
+                            <div className="flex flex-col items-center justify-center text-center py-8">
+                              <Terminal className="w-10 h-10 text-gray-600 mb-2" />
+                              <p className="text-gray-500">
+                                Execution successful, but no output was
+                                generated.
+                              </p>
+                            </div>
+                          )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-center h-full">
+                        <Terminal className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600 mb-2" />
+                        <p className="text-gray-500 text-sm sm:text-base">
+                          Click "Run" to see the output here
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Custom Input Panel */}
+                <div className="h-40 lg:h-full lg:w-1/3 border-t lg:border-t-0 lg:border-l border-slate-700 flex flex-col">
+                  <div className="p-2 sm:p-3 border-b border-slate-700">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-300">
+                      Custom Input (stdin)
+                    </h3>
+                  </div>
+                  <div className="flex-1 p-1 sm:p-2">
+                    <textarea
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      placeholder="Enter input for your program..."
+                      className="w-full h-full bg-slate-900 text-white text-xs sm:text-sm font-mono p-2 sm:p-3 rounded-md border border-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Sidebar */}
+        <aside
+          className={`
+      flex flex-col bg-slate-800 border-l border-slate-700 transition-all duration-300 ease-in-out
+      ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
+      lg:w-80 fixed lg:static right-0 top-0 h-full lg:h-auto z-40 lg:z-auto
+      ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
+      lg:flex-shrink-0
+    `}
+        >
+          <div className="p-2 border-b border-slate-700 flex items-center justify-between">
+            <div className="flex bg-slate-700 p-1 rounded-md">
+              <button
+                onClick={() => setActiveSidebarTab("users")}
+                className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded ${
+                  activeSidebarTab === "users"
+                    ? "bg-slate-600 text-white"
+                    : "text-gray-400 hover:bg-slate-600/50"
+                }`}
+              >
+                Users
+              </button>
+              <button
+                onClick={() => setActiveSidebarTab("chat")}
+                className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded ${
+                  activeSidebarTab === "chat"
+                    ? "bg-slate-600 text-white"
+                    : "text-gray-400 hover:bg-slate-600/50"
+                }`}
+              >
+                Chat
+              </button>
+            </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
+              title="Close Sidebar"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+
+          {activeSidebarTab === "users" && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-3 sm:p-4 border-b border-slate-700">
+                <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Participants ({users.length})</span>
+                </h3>
+              </div>
+              <div className="flex-1 p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto">
+                {users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-2 sm:gap-3 p-2 bg-slate-700/50 rounded-lg"
+                  >
+                    <div
+                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"
+                      style={{ backgroundColor: user.color }}
+                    ></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-200 truncate">
+                        {user.name}
+                        {user.id === currentUser?.id && (
+                          <span className="text-purple-400"> (You)</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        On Tab:{" "}
+                        {tabs.find((t) => t.id === user.activeTab)?.name ||
+                          "..."}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeSidebarTab === "chat" && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-3 sm:p-4 border-b border-slate-700">
+                <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Room Chat</span>
+                </h3>
+              </div>
+              <div className="flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto min-h-0">
+                {messages.map((message) => (
+                  <div key={message.id}>
+                    {message.type === "system" ? (
+                      <div className="text-xs text-gray-400 italic text-center my-2">
+                        {message.message}
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full mt-1.5"
+                          style={{ backgroundColor: message.userColor }}
+                        ></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-medium text-gray-300 text-xs sm:text-sm truncate">
+                              {message.userName}
+                            </span>
+                            <span className="text-xs text-gray-500 shrink-0">
+                              {new Date(message.timestamp).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </span>
+                          </div>
+                          <p className="text-gray-200 break-words text-xs sm:text-sm">
+                            {message.message}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              <form
+                onSubmit={handleSendMessage}
+                className="p-3 sm:p-4 border-t border-slate-700"
+              >
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 bg-slate-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatMessage.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed p-2 sm:p-2.5 rounded-lg transition-colors"
+                  >
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </aside>
+      </div>
+      {/* Overlay for dropdowns and mobile sidebar */}
+      {(showLanguageDropdown ||
+        showThemeDropdown ||
+        showTabNameModal ||
+        (isSidebarOpen &&
+          typeof window !== "undefined" &&
+          window.innerWidth < 1024)) && (
         <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowLanguageDropdown(false)}
-        />
-      )}
-      {showThemeDropdown && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowThemeDropdown(false)}
+          className="fixed inset-0 z-30 bg-black/30 lg:bg-transparent"
+          onClick={() => {
+            setShowLanguageDropdown(false);
+            setShowThemeDropdown(false);
+            setShowTabNameModal(false);
+            if (typeof window !== "undefined" && window.innerWidth < 1024) {
+              setIsSidebarOpen(false);
+            }
+          }}
         />
       )}
     </div>
