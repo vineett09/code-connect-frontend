@@ -31,10 +31,10 @@ export default function Sidebar({
   return (
     <aside
       className={`flex flex-col bg-slate-800 border-l border-slate-700 transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
-        lg:w-80 fixed lg:static right-0 top-0 h-full lg:h-auto z-40 lg:z-auto
-        ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
-        lg:flex-shrink-0`}
+  ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
+  lg:w-80 fixed lg:static right-0 top-16 h-[calc(100%-4rem)] lg:h-auto z-40 lg:z-auto
+  ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
+  lg:flex-shrink-0`}
     >
       <div className="p-2 border-b border-slate-700 flex items-center justify-between">
         <div className="flex bg-slate-700 p-1 rounded-md">

@@ -131,21 +131,7 @@ export default function EnterRoom() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{
-            left: mousePosition.x / 15,
-            top: mousePosition.y / 15,
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-2xl animate-bounce" />
-        <div className="absolute bottom-1/3 left-1/3 w-48 h-48 bg-pink-500/10 rounded-full blur-xl animate-ping" />
-      </div>
-
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-2xl">
@@ -316,7 +302,7 @@ export default function EnterRoom() {
                 <button
                   type="submit"
                   disabled={isLoading || !formData.userName || !formData.roomId}
-                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-[1.02] disabled:transform-none shadow-lg hover:shadow-2xl hover:shadow-purple-500/25"
+                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-semibold text-lg transition-all transform  disabled:transform-none shadow-lg hover:shadow-2xl hover:shadow-purple-500/25"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
