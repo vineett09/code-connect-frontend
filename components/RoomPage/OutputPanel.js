@@ -20,11 +20,11 @@ export default function OutputPanel({
         <div className="w-10 h-1 bg-slate-500 rounded-full"></div>
       </div>
       <div
-        style={{
-          height: `${outputPanelHeight}px`,
-          transition: "height 0.3s ease-in-out",
-        }}
-        className="flex flex-col lg:flex-row"
+        className={`
+    flex flex-col lg:flex-row
+    lg:[height:${outputPanelHeight}px]
+    max-h-[80vh]
+  `}
       >
         <div className="flex-1 flex flex-col h-full lg:w-2/3">
           <div className="p-3 border-b border-slate-700 flex items-center justify-between">

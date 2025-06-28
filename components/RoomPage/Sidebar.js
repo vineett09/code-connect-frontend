@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Play,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Sidebar({
   isSidebarOpen,
@@ -40,17 +40,20 @@ export default function Sidebar({
   return (
     <aside
       className={`
-        flex flex-col bg-slate-800 border border-slate-700 rounded-lg shadow-xl
-        transition-all duration-300 ease-in-out overflow-hidden
-        lg:w-72 lg:flex-shrink-0
-        ${isSidebarOpen ? "w-full sm:w-72" : "w-0"}
-        lg:translate-x-0
-        ${
-          isSidebarOpen && window.innerWidth < 1024
-            ? "fixed right-2 top-16 bottom-2 z-40"
-            : "lg:static"
-        }
-      `}
+    flex flex-col bg-slate-800 border border-slate-700 rounded-lg shadow-xl
+    transition-all duration-300 ease-in-out overflow-hidden
+    lg:w-72 lg:flex-shrink-0
+    ${isSidebarOpen ? "w-full sm:w-72" : "w-0"}
+    lg:translate-x-0
+    ${
+      isSidebarOpen && window.innerWidth < 1024
+        ? "fixed right-2 top-16 bottom-2 z-40"
+        : "lg:static"
+    }
+  `}
+      style={{
+        height: "calc(100vh - 4rem)", // <—— Adjust header offset here if needed
+      }}
     >
       {/* Header for Tabs and Close Button */}
       <div className="p-2 border-b border-slate-700 flex items-center justify-between bg-slate-800/90 flex-shrink-0">
@@ -94,18 +97,18 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      {/* Content Area with constrained height and internal scrolling */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Users Tab */}
         {activeSidebarTab === "users" && (
-          <div className="flex-1 flex flex-col">
-            <div className="p-3 border-b border-slate-700">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-3 border-b border-slate-700 flex-shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4" />
                 <span>Participants ({users.length})</span>
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {users.map((user) => (
                 <div
                   key={user.id}
@@ -137,14 +140,14 @@ export default function Sidebar({
 
         {/* Chat Tab */}
         {activeSidebarTab === "chat" && (
-          <div className="flex-1 flex flex-col">
-            <div className="p-3 border-b border-slate-700">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-3 border-b border-slate-700 flex-shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <MessageCircle className="w-4 h-4" />
                 <span>Room Chat</span>
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-4">
               {messages.map((message) => (
                 <div key={message.id}>
                   {message.type === "system" ? (
@@ -192,7 +195,7 @@ export default function Sidebar({
             </div>
             <form
               onSubmit={handleSendMessage}
-              className="p-2 border-t border-slate-700"
+              className="p-2 border-t border-slate-700 flex-shrink-0"
             >
               <div className="flex gap-2">
                 <input
@@ -214,15 +217,16 @@ export default function Sidebar({
           </div>
         )}
 
+        {/* Settings Tab */}
         {activeSidebarTab === "settings" && (
-          <div className="flex-1 flex flex-col">
-            <div className="p-3 border-b border-slate-700">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-3 border-b border-slate-700 flex-shrink-0">
               <h3 className="font-semibold flex items-center gap-2 text-sm">
                 <Settings className="w-4 h-4" />
                 <span>Editor Settings</span>
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-4">
               {/* Language Selector */}
               <div className="relative">
                 <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
@@ -247,7 +251,7 @@ export default function Sidebar({
                   />
                 </button>
                 {showLanguageDropdown && (
-                  <div className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                     {languages.map((lang) => (
                       <button
                         key={lang.id}
@@ -294,7 +298,7 @@ export default function Sidebar({
                   />
                 </button>
                 {showThemeDropdown && (
-                  <div className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
                     {themes.map((theme) => (
                       <button
                         key={theme.id}

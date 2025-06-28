@@ -331,10 +331,6 @@ export default function RoomPage() {
     };
   }, [roomId, router]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   const handleCodeChange = (newCode) => {
     if (isUpdatingFromServer.current) return;
     setTabContents((prev) => ({ ...prev, [activeTab]: newCode }));
