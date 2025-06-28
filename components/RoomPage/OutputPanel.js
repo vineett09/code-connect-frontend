@@ -37,7 +37,7 @@ export default function OutputPanel({
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex-1 p-4 overflow-auto">
+          <div className="flex-1 p-4 overflow-auto max-h-[300px]">
             {isCompiling ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex items-center gap-3">
