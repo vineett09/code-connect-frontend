@@ -7,9 +7,19 @@ export default function Editor({
   getCurrentTabLanguage,
   editorTheme,
   fontSize,
+  showOutput,
+  outputPanelHeight,
 }) {
   return (
-    <div className="flex-1 h-[calc(100vh-10rem)] bg-slate-800 rounded-lg border border-slate-700 overflow-hidden relative">
+    <div
+      className="flex-1 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden relative"
+      style={{
+        height: showOutput
+          ? `calc(100% - ${outputPanelHeight}px - 0.5rem)`
+          : "100%",
+        transition: "height 0.3s ease-in-out",
+      }}
+    >
       <MonacoEditor
         key={activeTab}
         value={getCurrentTabContent()}

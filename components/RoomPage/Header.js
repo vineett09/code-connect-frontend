@@ -5,8 +5,6 @@ import {
   Check,
   Play,
   Loader2,
-  Palette,
-  ChevronDown,
   Download,
   Terminal,
   Menu,
@@ -23,14 +21,6 @@ export default function Header({
   isLanguageSupported,
   getCurrentTabLanguage,
   languages,
-  showLanguageDropdown,
-  setShowLanguageDropdown,
-  handleLanguageChange,
-  showThemeDropdown,
-  setShowThemeDropdown,
-  editorTheme,
-  setEditorTheme,
-  themes,
   downloadCode,
   showOutput,
   setShowOutput,
@@ -52,7 +42,7 @@ export default function Header({
             <h1 className="text-sm sm:text-lg font-bold truncate">
               {roomData?.name || "Untitled Room"}
             </h1>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-gray-400">
               <Code className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="capitalize truncate">
                 {languages.find((lang) => lang.id === getCurrentTabLanguage())
@@ -70,19 +60,6 @@ export default function Header({
                   <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 shrink-0" />
                 ) : (
                   <Copy className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                )}
-              </button>
-            </div>
-            <div className="sm:hidden flex items-center gap-2 text-xs text-gray-400">
-              <button
-                onClick={copyRoomId}
-                className="flex items-center gap-1 hover:text-white transition-colors"
-              >
-                <span className="truncate max-w-16">{roomId}</span>
-                {copied ? (
-                  <Check className="w-3 h-3 text-green-400" />
-                ) : (
-                  <Copy className="w-3 h-3" />
                 )}
               </button>
             </div>
@@ -113,85 +90,6 @@ export default function Header({
             <span className="hidden xs:inline">Run</span>
           </button>
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
-            title="Toggle Sidebar"
-          >
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <div className="hidden md:flex items-center gap-2">
-            <div className="relative">
-              <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-              >
-                <Code className="w-4 h-4" />
-                <span className="hidden lg:inline">
-                  {languages.find((lang) => lang.id === getCurrentTabLanguage())
-                    ?.name || "Language"}
-                </span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {showLanguageDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.id}
-                      onClick={() => handleLanguageChange(lang.id)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors flex items-center justify-between ${
-                        getCurrentTabLanguage() === lang.id
-                          ? "bg-slate-600 text-purple-400 font-semibold"
-                          : ""
-                      }`}
-                    >
-                      <span>{lang.name}</span>
-                      {isLanguageSupported(lang.id) && (
-                        <Play className="w-3 h-3 text-green-400" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setShowThemeDropdown(!showThemeDropdown)}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-                title="Change Theme"
-              >
-                <Palette className="w-4 h-4" />
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {showThemeDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
-                  {themes.map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => {
-                        setEditorTheme(theme.id);
-                        setShowThemeDropdown(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
-                        editorTheme === theme.id
-                          ? "bg-slate-600 text-purple-400 font-semibold"
-                          : ""
-                      }`}
-                    >
-                      {theme.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={downloadCode}
-              className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700"
-              title="Download Code"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          </div>
-          <button
             onClick={() => setShowOutput(!showOutput)}
             className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${
               showOutput
@@ -201,6 +99,20 @@ export default function Header({
           >
             <Terminal className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">Output</span>
+          </button>
+          <button
+            onClick={downloadCode}
+            className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 hidden md:flex"
+            title="Download Code"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
+            title="Toggle Sidebar"
+          >
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>

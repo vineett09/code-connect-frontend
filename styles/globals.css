@@ -19,3 +19,13 @@
       display: inline;
     }
   }
+
+  /* This ensures the layout accounts for the output panel */
+body {
+  --output-panel-height: 0px;
+}
+
+/* For the sidebar height calculation */
+.aside-height {
+  height: calc(100vh - 4rem - var(--output-panel-height));
+}

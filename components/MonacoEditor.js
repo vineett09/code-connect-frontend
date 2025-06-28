@@ -153,7 +153,7 @@ const MonacoEditor = ({ value, onChange, language, theme, options }) => {
     editorRef.current?.updateOptions({ theme: theme || "dark-custom" });
   }, [theme]);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  return <div ref={containerRef} className="w-full h-full " />;
 };
 
 export default MonacoEditor;

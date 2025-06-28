@@ -485,7 +485,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col overflow-hidden ">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       <Header
         roomData={roomData}
         roomId={roomId}
@@ -497,30 +497,24 @@ export default function RoomPage() {
         isLanguageSupported={isLanguageSupported}
         getCurrentTabLanguage={getCurrentTabLanguage}
         languages={languages}
-        showLanguageDropdown={showLanguageDropdown}
-        setShowLanguageDropdown={setShowLanguageDropdown}
-        handleLanguageChange={handleLanguageChange}
-        showThemeDropdown={showThemeDropdown}
-        setShowThemeDropdown={setShowThemeDropdown}
-        editorTheme={editorTheme}
-        setEditorTheme={setEditorTheme}
-        themes={themes}
         downloadCode={downloadCode}
         showOutput={showOutput}
         setShowOutput={setShowOutput}
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
       />
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <Tabs
-            tabs={tabs}
-            activeTab={activeTab}
-            switchTab={switchTab}
-            createNewTab={createNewTab}
-            handleDeleteTab={handleDeleteTab}
-          />
-          <div className="flex-1 flex flex-col p-1 sm:p-2 md:p-4 overflow-hidden">
+
+      <div className="flex-1 flex flex-col overflow-hidden p-2 gap-2">
+        <div className="flex-1 flex gap-2 overflow-hidden">
+          {/* Main content: Editor and Tabs */}
+          <main className="flex-1 flex flex-col min-w-0">
+            <Tabs
+              tabs={tabs}
+              activeTab={activeTab}
+              switchTab={switchTab}
+              createNewTab={createNewTab}
+              handleDeleteTab={handleDeleteTab}
+            />
             <Editor
               activeTab={activeTab}
               getCurrentTabContent={getCurrentTabContent}
@@ -528,49 +522,62 @@ export default function RoomPage() {
               getCurrentTabLanguage={getCurrentTabLanguage}
               editorTheme={editorTheme}
               fontSize={fontSize}
-            />
-            <TabNameModal
-              showTabNameModal={showTabNameModal}
-              setShowTabNameModal={setShowTabNameModal}
-              newTabName={newTabName}
-              setNewTabName={setNewTabName}
-              handleCreateTabWithName={handleCreateTabWithName}
-            />
-            <OutputPanel
               showOutput={showOutput}
-              setShowOutput={setShowOutput}
               outputPanelHeight={outputPanelHeight}
-              handleMouseDown={handleMouseDown}
-              isCompiling={isCompiling}
-              compilationResult={compilationResult}
-              getStatusIcon={getStatusIcon}
-              customInput={customInput}
-              setCustomInput={setCustomInput}
             />
-          </div>
-        </main>
-        <Sidebar
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          activeSidebarTab={activeSidebarTab}
-          setActiveSidebarTab={setActiveSidebarTab}
-          users={users}
-          currentUser={currentUser}
-          tabs={tabs}
-          messages={messages}
-          chatMessage={chatMessage}
-          setChatMessage={setChatMessage}
-          handleSendMessage={handleSendMessage}
-          messagesEndRef={messagesEndRef}
-          handleLanguageChange={handleLanguageChange}
-          getCurrentTabLanguage={getCurrentTabLanguage}
-          languages={languages}
-          editorTheme={editorTheme}
-          setEditorTheme={setEditorTheme}
-          themes={themes}
-          downloadCode={downloadCode}
-        />
+          </main>
+
+          {/* Sidebar */}
+          <Sidebar
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            activeSidebarTab={activeSidebarTab}
+            setActiveSidebarTab={setActiveSidebarTab}
+            users={users}
+            currentUser={currentUser}
+            tabs={tabs}
+            messages={messages}
+            chatMessage={chatMessage}
+            setChatMessage={setChatMessage}
+            handleSendMessage={handleSendMessage}
+            messagesEndRef={messagesEndRef}
+            // Add these new props for the settings tab
+            handleLanguageChange={handleLanguageChange}
+            getCurrentTabLanguage={getCurrentTabLanguage}
+            languages={languages}
+            isLanguageSupported={isLanguageSupported}
+            editorTheme={editorTheme}
+            setEditorTheme={setEditorTheme}
+            themes={themes}
+            downloadCode={downloadCode}
+          />
+        </div>
+
+        {/* Output Panel */}
+        {showOutput && (
+          <OutputPanel
+            showOutput={showOutput}
+            setShowOutput={setShowOutput}
+            outputPanelHeight={outputPanelHeight}
+            handleMouseDown={handleMouseDown}
+            isCompiling={isCompiling}
+            compilationResult={compilationResult}
+            getStatusIcon={getStatusIcon}
+            customInput={customInput}
+            setCustomInput={setCustomInput}
+          />
+        )}
       </div>
+
+      <TabNameModal
+        showTabNameModal={showTabNameModal}
+        setShowTabNameModal={setShowTabNameModal}
+        newTabName={newTabName}
+        setNewTabName={setNewTabName}
+        handleCreateTabWithName={handleCreateTabWithName}
+      />
+
+      {/* Overlays for modals and mobile sidebar */}
       {(showLanguageDropdown ||
         showThemeDropdown ||
         showTabNameModal ||

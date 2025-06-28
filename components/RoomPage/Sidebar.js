@@ -5,7 +5,12 @@ import {
   X,
   Send,
   Download,
+  Code,
+  Palette,
+  ChevronDown,
+  Play,
 } from "lucide-react";
+import { useState } from "react";
 
 export default function Sidebar({
   isSidebarOpen,
@@ -23,214 +28,311 @@ export default function Sidebar({
   handleLanguageChange,
   getCurrentTabLanguage,
   languages,
+  isLanguageSupported,
   editorTheme,
   setEditorTheme,
   themes,
   downloadCode,
 }) {
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+
   return (
     <aside
-      className={`flex flex-col bg-slate-800 border-l border-slate-700 transition-all duration-300 ease-in-out
-  ${isSidebarOpen ? "w-full sm:w-80" : "w-0"}
-  lg:w-80 fixed lg:static right-0 top-16 h-[calc(100%-4rem)] lg:h-auto z-40 lg:z-auto
-  ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
-  lg:flex-shrink-0`}
+      className={`
+        flex flex-col bg-slate-800 border border-slate-700 rounded-lg shadow-xl
+        transition-all duration-300 ease-in-out overflow-hidden
+        lg:w-72 lg:flex-shrink-0
+        ${isSidebarOpen ? "w-full sm:w-72" : "w-0"}
+        lg:translate-x-0
+        ${
+          isSidebarOpen && window.innerWidth < 1024
+            ? "fixed right-2 top-16 bottom-2 z-40"
+            : "lg:static"
+        }
+      `}
     >
-      <div className="p-2 border-b border-slate-700 flex items-center justify-between">
-        <div className="flex bg-slate-700 p-1 rounded-md">
+      {/* Header for Tabs and Close Button */}
+      <div className="p-2 border-b border-slate-700 flex items-center justify-between bg-slate-800/90 flex-shrink-0">
+        <div className="flex gap-1">
           <button
             onClick={() => setActiveSidebarTab("users")}
-            className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded ${
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               activeSidebarTab === "users"
-                ? "bg-slate-600 text-white"
-                : "text-gray-400 hover:bg-slate-600/50"
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:bg-slate-700"
             }`}
           >
             Users
           </button>
           <button
             onClick={() => setActiveSidebarTab("chat")}
-            className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded ${
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               activeSidebarTab === "chat"
-                ? "bg-slate-600 text-white"
-                : "text-gray-400 hover:bg-slate-600/50"
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:bg-slate-700"
             }`}
           >
             Chat
           </button>
           <button
             onClick={() => setActiveSidebarTab("settings")}
-            className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded lg:hidden ${
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               activeSidebarTab === "settings"
-                ? "bg-slate-600 text-white"
-                : "text-gray-400 hover:bg-slate-600/50"
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:bg-slate-700"
             }`}
           >
-            <Settings className="w-4 h-4" />
+            Settings
           </button>
         </div>
         <button
           onClick={() => setIsSidebarOpen(false)}
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
-          title="Close Sidebar"
+          className="p-1 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-slate-700 lg:hidden"
         >
-          <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
-      {activeSidebarTab === "users" && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-3 sm:p-4 border-b border-slate-700">
-            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Participants ({users.length})</span>
-            </h3>
-          </div>
-          <div className="flex-1 p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto">
-            {users.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center gap-2 sm:gap-3 p-2 bg-slate-700/50 rounded-lg"
-              >
+
+      {/* Content Area */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {/* Users Tab */}
+        {activeSidebarTab === "users" && (
+          <div className="flex-1 flex flex-col">
+            <div className="p-3 border-b border-slate-700">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Users className="w-4 h-4" />
+                <span>Participants ({users.length})</span>
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {users.map((user) => (
                 <div
-                  className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"
-                  style={{ backgroundColor: user.color }}
-                ></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-200 truncate">
-                    {user.name}
-                    {user.id === currentUser?.id && (
-                      <span className="text-purple-400"> (You)</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    On Tab:{" "}
-                    {tabs.find((t) => t.id === user.activeTab)?.name || "..."}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {activeSidebarTab === "chat" && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-3 sm:p-4 border-b border-slate-700">
-            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Room Chat</span>
-            </h3>
-          </div>
-          <div className="flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto min-h-0">
-            {messages.map((message) => (
-              <div key={message.id}>
-                {message.type === "system" ? (
-                  <div className="text-xs text-gray-400 italic text-center my-2">
-                    {message.message}
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <div
-                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full mt-1.5"
-                      style={{ backgroundColor: message.userColor }}
-                    ></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-medium text-gray-300 text-xs sm:text-sm truncate">
-                          {message.userName}
+                  key={user.id}
+                  className="flex items-center gap-3 p-3 hover:bg-slate-700/50 transition-colors"
+                >
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: user.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-200 truncate">
+                      {user.name}
+                      {user.id === currentUser?.id && (
+                        <span className="text-purple-400 ml-1.5 text-xs">
+                          (You)
                         </span>
-                        <span className="text-xs text-gray-500 shrink-0">
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      On tab:{" "}
+                      {tabs.find((t) => t.id === user.activeTab)?.name || "..."}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Tab */}
+        {activeSidebarTab === "chat" && (
+          <div className="flex-1 flex flex-col">
+            <div className="p-3 border-b border-slate-700">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <MessageCircle className="w-4 h-4" />
+                <span>Room Chat</span>
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              {messages.map((message) => (
+                <div key={message.id}>
+                  {message.type === "system" ? (
+                    <div className="text-xs text-gray-500 text-center my-2">
+                      {message.message}
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex items-end gap-2 ${
+                        message.userId === currentUser?.id ? "justify-end" : ""
+                      }`}
+                    >
+                      {message.userId !== currentUser?.id && (
+                        <div
+                          className="w-6 h-6 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: message.userColor }}
+                          title={message.userName}
+                        />
+                      )}
+                      <div
+                        className={`max-w-[80%] p-2.5 rounded-lg ${
+                          message.userId === currentUser?.id
+                            ? "bg-purple-600 text-white rounded-br-none"
+                            : "bg-slate-700 text-gray-200 rounded-bl-none"
+                        }`}
+                      >
+                        {message.userId !== currentUser?.id && (
+                          <div className="font-semibold text-xs text-purple-300 mb-1">
+                            {message.userName}
+                          </div>
+                        )}
+                        <p className="text-sm break-words">{message.message}</p>
+                        <div className="text-xs text-right mt-1.5 opacity-70">
                           {new Date(message.timestamp).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
-                        </span>
+                        </div>
                       </div>
-                      <p className="text-gray-200 break-words text-xs sm:text-sm">
-                        {message.message}
-                      </p>
                     </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+            <form
+              onSubmit={handleSendMessage}
+              className="p-2 border-t border-slate-700"
+            >
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-purple-500 transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatMessage.trim()}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed p-2 rounded-lg transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeSidebarTab === "settings" && (
+          <div className="flex-1 flex flex-col">
+            <div className="p-3 border-b border-slate-700">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Settings className="w-4 h-4" />
+                <span>Editor Settings</span>
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              {/* Language Selector */}
+              <div className="relative">
+                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                  Language
+                </h4>
+                <button
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <Code className="w-4 h-4" />
+                    <span>
+                      {languages.find(
+                        (lang) => lang.id === getCurrentTabLanguage()
+                      )?.name || "Language"}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      showLanguageDropdown ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {showLanguageDropdown && (
+                  <div className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.id}
+                        onClick={() => {
+                          handleLanguageChange(lang.id);
+                          setShowLanguageDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors flex items-center justify-between ${
+                          getCurrentTabLanguage() === lang.id
+                            ? "bg-slate-600 text-purple-400 font-semibold"
+                            : ""
+                        }`}
+                      >
+                        <span>{lang.name}</span>
+                        {isLanguageSupported(lang.id) && (
+                          <Play className="w-3 h-3 text-green-400" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-          <form
-            onSubmit={handleSendMessage}
-            className="p-3 sm:p-4 border-t border-slate-700"
-          >
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-slate-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={!chatMessage.trim()}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed p-2 sm:p-2.5 rounded-lg transition-colors"
-              >
-                <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-      {activeSidebarTab === "settings" && (
-        <div className="flex-1 flex flex-col overflow-hidden lg:hidden">
-          <div className="p-3 sm:p-4 border-b border-slate-700">
-            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Editor Settings</span>
-            </h3>
-          </div>
-          <div className="flex-1 p-3 sm:p-4 space-y-4 overflow-y-auto">
-            <div className="space-y-2">
-              <label className="text-xs text-gray-400">Language</label>
+
+              {/* Theme Selector */}
               <div className="relative">
-                <select
-                  value={getCurrentTabLanguage()}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                  Theme
+                </h4>
+                <button
+                  onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+                  className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
                 >
-                  {languages.map((lang) => (
-                    <option key={lang.id} value={lang.id}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
+                  <span className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    <span>
+                      {themes.find((t) => t.id === editorTheme)?.name ||
+                        "Theme"}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      showThemeDropdown ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {showThemeDropdown && (
+                  <div className="mt-1 w-full bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10">
+                    {themes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => {
+                          setEditorTheme(theme.id);
+                          setShowThemeDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
+                          editorTheme === theme.id
+                            ? "bg-slate-600 text-purple-400 font-semibold"
+                            : ""
+                        }`}
+                      >
+                        {theme.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Download Button */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                  Actions
+                </h4>
+                <button
+                  onClick={downloadCode}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm font-semibold"
+                  title="Download Code"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Current Tab</span>
+                </button>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs text-gray-400">Theme</label>
-              <div className="relative">
-                <select
-                  value={editorTheme}
-                  onChange={(e) => setEditorTheme(e.target.value)}
-                  className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                >
-                  {themes.map((theme) => (
-                    <option key={theme.id} value={theme.id}>
-                      {theme.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="pt-4">
-              <button
-                onClick={downloadCode}
-                className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Code</span>
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 }
