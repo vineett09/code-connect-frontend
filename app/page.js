@@ -5,7 +5,6 @@ import { Code, Users, Play, Zap, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const router = useRouter();
 

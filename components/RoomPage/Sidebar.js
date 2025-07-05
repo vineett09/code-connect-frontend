@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Play,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Sidebar({
   isSidebarOpen,
@@ -46,13 +46,13 @@ export default function Sidebar({
     ${isSidebarOpen ? "w-full sm:w-72" : "w-0"}
     lg:translate-x-0
     ${
-      isSidebarOpen && window.innerWidth < 1024
+      isSidebarOpen && typeof window !== "undefined" && window.innerWidth < 1024
         ? "fixed right-2 top-16 bottom-2 z-40"
         : "lg:static"
     }
   `}
       style={{
-        height: "calc(100vh - 4rem)", // <—— Adjust header offset here if needed
+        height: "calc(100vh - 4rem)",
       }}
     >
       {/* Header for Tabs and Close Button */}
@@ -97,7 +97,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Content Area with constrained height and internal scrolling */}
+      {/* Content Area */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Users Tab */}
         {activeSidebarTab === "users" && (
@@ -112,12 +112,23 @@ export default function Sidebar({
               {users.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-3 p-3 hover:bg-slate-700/50 transition-colors"
+                  className={`flex items-center gap-3 p-3 hover:bg-slate-700/50 transition-colors ${
+                    user.disconnected ? "opacity-50" : ""
+                  }`}
+                  title={
+                    user.disconnected
+                      ? `${user.name} (disconnected)`
+                      : user.name
+                  }
                 >
                   <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0 relative"
                     style={{ backgroundColor: user.color }}
-                  />
+                  >
+                    {!user.disconnected && (
+                      <span className="absolute inset-0 rounded-full bg-current animate-ping"></span>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-200 truncate">
                       {user.name}
@@ -128,8 +139,12 @@ export default function Sidebar({
                       )}
                     </p>
                     <p className="text-xs text-gray-400 truncate">
-                      On tab:{" "}
-                      {tabs.find((t) => t.id === user.activeTab)?.name || "..."}
+                      {user.disconnected
+                        ? "Disconnected"
+                        : `On tab: ${
+                            tabs.find((t) => t.id === user.activeTab)?.name ||
+                            "..."
+                          }`}
                     </p>
                   </div>
                 </div>
@@ -219,120 +234,111 @@ export default function Sidebar({
 
         {/* Settings Tab */}
         {activeSidebarTab === "settings" && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="p-3 border-b border-slate-700 flex-shrink-0">
-              <h3 className="font-semibold flex items-center gap-2 text-sm">
-                <Settings className="w-4 h-4" />
-                <span>Editor Settings</span>
-              </h3>
+          <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-4">
+            {/* Language Selector */}
+            <div className="relative">
+              <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                Language
+              </h4>
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <Code className="w-4 h-4" />
+                  <span>
+                    {languages.find(
+                      (lang) => lang.id === getCurrentTabLanguage()
+                    )?.name || "Language"}
+                  </span>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    showLanguageDropdown ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {showLanguageDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.id}
+                      onClick={() => {
+                        handleLanguageChange(lang.id);
+                        setShowLanguageDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors flex items-center justify-between ${
+                        getCurrentTabLanguage() === lang.id
+                          ? "bg-slate-600 text-purple-400 font-semibold"
+                          : ""
+                      }`}
+                    >
+                      <span>{lang.name}</span>
+                      {isLanguageSupported(lang.id) && (
+                        <Play className="w-3 h-3 text-green-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-4">
-              {/* Language Selector */}
-              <div className="relative">
-                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
-                  Language
-                </h4>
-                <button
-                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    <Code className="w-4 h-4" />
-                    <span>
-                      {languages.find(
-                        (lang) => lang.id === getCurrentTabLanguage()
-                      )?.name || "Language"}
-                    </span>
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      showLanguageDropdown ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {showLanguageDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {languages.map((lang) => (
-                      <button
-                        key={lang.id}
-                        onClick={() => {
-                          handleLanguageChange(lang.id);
-                          setShowLanguageDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors flex items-center justify-between ${
-                          getCurrentTabLanguage() === lang.id
-                            ? "bg-slate-600 text-purple-400 font-semibold"
-                            : ""
-                        }`}
-                      >
-                        <span>{lang.name}</span>
-                        {isLanguageSupported(lang.id) && (
-                          <Play className="w-3 h-3 text-green-400" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* Theme Selector */}
-              <div className="relative">
-                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
-                  Theme
-                </h4>
-                <button
-                  onClick={() => setShowThemeDropdown(!showThemeDropdown)}
-                  className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    <Palette className="w-4 h-4" />
-                    <span>
-                      {themes.find((t) => t.id === editorTheme)?.name ||
-                        "Theme"}
-                    </span>
+            {/* Theme Selector */}
+            <div className="relative">
+              <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                Theme
+              </h4>
+              <button
+                onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+                className="w-full flex items-center justify-between gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  <span>
+                    {themes.find((t) => t.id === editorTheme)?.name || "Theme"}
                   </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      showThemeDropdown ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {showThemeDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
-                    {themes.map((theme) => (
-                      <button
-                        key={theme.id}
-                        onClick={() => {
-                          setEditorTheme(theme.id);
-                          setShowThemeDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
-                          editorTheme === theme.id
-                            ? "bg-slate-600 text-purple-400 font-semibold"
-                            : ""
-                        }`}
-                      >
-                        {theme.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    showThemeDropdown ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {showThemeDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50">
+                  {themes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => {
+                        setEditorTheme(theme.id);
+                        setShowThemeDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-600 transition-colors ${
+                        editorTheme === theme.id
+                          ? "bg-slate-600 text-purple-400 font-semibold"
+                          : ""
+                      }`}
+                    >
+                      {theme.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Download Button */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
-                  Actions
-                </h4>
-                <button
-                  onClick={downloadCode}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm font-semibold"
-                  title="Download Code"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Current Tab</span>
-                </button>
-              </div>
+            {/* Download Button */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 mb-2 tracking-wider uppercase">
+                Actions
+              </h4>
+              <button
+                onClick={downloadCode}
+                className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors text-sm font-semibold"
+                title="Download Code"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Current Tab</span>
+              </button>
             </div>
           </div>
         )}

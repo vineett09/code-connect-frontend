@@ -1,4 +1,4 @@
-import MonacoEditor from "@/components/MonacoEditor";
+import MonacoEditor from "./MonacoEditor";
 
 export default function Editor({
   activeTab,
