@@ -56,6 +56,7 @@ export const RoomLayout = ({
   handleLanguageChange,
   handleMouseDown,
   handleCreateTabWithName,
+  handleShareTab, // Add this function
 }) => {
   const getStatusIcon = (statusId) => {
     if (statusId === 3)
@@ -92,9 +93,11 @@ export const RoomLayout = ({
             <Tabs
               tabs={tabs}
               activeTab={activeTab}
+              currentUser={currentUser}
               switchTab={switchTab}
               createNewTab={createNewTab}
               handleDeleteTab={handleDeleteTab}
+              handleShareTab={handleShareTab} // Pass the function
             />
             <Editor
               activeTab={activeTab}

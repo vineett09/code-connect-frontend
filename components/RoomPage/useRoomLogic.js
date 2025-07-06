@@ -206,6 +206,73 @@ export const useRoomLogic = () => {
         currentActiveTab === tabId ? newActiveTab : currentActiveTab
       );
     });
+    // In useRoomLogic.js, replace the existing tab-removed handler with:
+    // In useRoomLogic.js, replace the tab-removed handler with:
+    newSocket.on("tab-removed", (data) => {
+      const { tabId } = data;
+
+      setTabs((prevTabs) => {
+        const tab = prevTabs.find((t) => t.id === tabId);
+        if (tab && tab.createdBy === currentUser?.id) {
+          console.log("Ignoring tab-removed for own tab");
+          return prevTabs;
+        }
+        return prevTabs.filter((t) => t.id !== tabId);
+      });
+
+      setTabContents((prevContents) => {
+        const tab = tabs.find((t) => t.id === tabId);
+        if (tab && tab.createdBy === currentUser?.id) {
+          return prevContents;
+        }
+        const newContents = { ...prevContents };
+        delete newContents[tabId];
+        return newContents;
+      });
+
+      setActiveTab((currentActiveTab) => {
+        if (currentActiveTab === tabId) {
+          return "main";
+        }
+        return currentActiveTab;
+      });
+    });
+
+    newSocket.on("tab-privacy-changed", (data) => {
+      const { tab, userId, userName } = data;
+
+      setTabs((prev) => {
+        const existingTabIndex = prev.findIndex((t) => t.id === tab.id);
+        if (existingTabIndex !== -1) {
+          const newTabs = [...prev];
+          newTabs[existingTabIndex] = {
+            ...newTabs[existingTabIndex],
+            isPublic: tab.isPublic,
+          };
+          return newTabs;
+        } else if (tab.isPublic) {
+          return [...prev, tab];
+        }
+        return prev;
+      });
+
+      if (tab.isPublic && !tabContents[tab.id]) {
+        setTabContents((prev) => ({ ...prev, [tab.id]: tab.code }));
+      } else if (!tab.isPublic && tab.createdBy === currentUser?.id) {
+        setTabContents((prev) => ({ ...prev, [tab.id]: tab.code }));
+      }
+
+      const action = tab.isPublic ? "shared" : "made private";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `sys-${Date.now()}`,
+          type: "system",
+          message: `${userName} ${action} the tab "${tab.name}"`,
+          timestamp: new Date(),
+        },
+      ]);
+    });
 
     newSocket.on("user-tab-switched", (data) => {
       console.log("User tab switched:", data);
@@ -263,6 +330,12 @@ export const useRoomLogic = () => {
     setTabContents((prev) => ({ ...prev, [activeTab]: newCode }));
     if (socket) {
       socket.emit("code-change", { roomId, tabId: activeTab, code: newCode });
+    }
+  };
+
+  const handleShareTab = (tabId, isPublic) => {
+    if (socket) {
+      socket.emit("share-tab", { roomId, tabId, isPublic });
     }
   };
 
@@ -408,8 +481,10 @@ export const useRoomLogic = () => {
     const newTab = {
       id: newTabId,
       name: newTabName.trim(),
-      code: `// ${newTabName.trim()}\n// Start coding here...\n`,
+      code: `// ${newTabName.trim()}\n// Private tab - only you can see this initially\n// Click the share button to make it visible to others\n`,
       language: "javascript",
+      isPublic: false, // Explicitly set as private
+      createdBy: currentUser?.id, // Set current user as creator
     };
     if (socket) {
       socket.emit("create-tab", { roomId, tab: newTab });
@@ -507,6 +582,7 @@ export const useRoomLogic = () => {
 
     // Functions
     handleCodeChange,
+    handleShareTab,
     leaveRoom,
     compileAndRun,
     isLanguageSupported,
