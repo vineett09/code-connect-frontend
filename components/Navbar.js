@@ -28,17 +28,20 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {/* Authentication Section */}
-            {session ? (
+            {session?.user ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-800/50 rounded-lg border border-gray-700">
+                <Link
+                  href="/profile"
+                  className="flex items-center space-x-2 px-3 py-1.5 bg-gray-800/50 rounded-lg border border-gray-700 hover:bg-gray-700/50 transition-colors"
+                >
                   <UserCircle2 className="w-5 h-5 text-purple-400" />
                   <span className="text-gray-300 text-sm truncate max-w-[120px]">
                     {session.user.name}
                   </span>
-                </div>
+                </Link>
                 <button
-                  onClick={() => signOut()}
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-sm px-4 py-2 rounded-lg text-white transition-all "
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-sm px-4 py-2 rounded-lg text-white transition-all"
                 >
                   Logout
                 </button>

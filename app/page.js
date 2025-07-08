@@ -82,6 +82,15 @@ export default function HomePage() {
                 Create Room
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
+              <button
+                onClick={() => {
+                  router.push("/challenge-room");
+                }}
+                className="bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform flex items-center justify-center group"
+              >
+                Challenge Room
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </div>
