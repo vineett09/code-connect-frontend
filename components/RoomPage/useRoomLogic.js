@@ -56,7 +56,7 @@ export const useRoomLogic = () => {
 
   // Main useEffect for Socket Connection and Event Handling
   useEffect(() => {
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io("http://localhost:5000/main");
     setSocket(newSocket);
 
     const userName = localStorage.getItem("userName");
