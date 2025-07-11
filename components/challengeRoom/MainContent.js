@@ -61,7 +61,7 @@ const MainContent = ({
   };
 
   return (
-    <div className="lg:col-span-3 ">
+    <div>
       {/* Challenge Controls */}
       <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 border border-gray-700">
         <div className="flex items-center justify-between">
@@ -166,16 +166,17 @@ const MainContent = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
           {/* Left Side - Problem Statement */}
-          <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-            <div className="bg-gray-700/50 p-4 border-b border-gray-600">
+          <div className="lg:col-span-3 bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden h-[560px] flex flex-col">
+            <div className="bg-gray-700/50 p-4 border-b border-gray-600 flex-shrink-0">
+              {" "}
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">Problem</h3>
               </div>
             </div>
-            <div className="p-6 max-h-[600px] overflow-y-auto">
+            <div className="p-6 max-h-[500px] overflow-y-auto">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-bold text-white">
@@ -227,7 +228,7 @@ const MainContent = ({
           </div>
 
           {/* Right Side - Code Editor and Submissions */}
-          <div className="space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             {/* Code Editor */}
             <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
               <div className="bg-gray-700/50 p-4 border-b border-gray-600">

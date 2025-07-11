@@ -397,7 +397,7 @@ const DSAChallengeRoom = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="space-y-6">
           <MainContent
             room={room}
             user={user}
@@ -415,7 +415,6 @@ const DSAChallengeRoom = () => {
             submissions={submissions}
             getStatusColor={getStatusColor}
           />
-
           <Sidebar users={users} user={user} leaderboard={leaderboard} />
         </div>
       </div>

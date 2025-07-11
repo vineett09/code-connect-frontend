@@ -55,7 +55,7 @@ const Sidebar = ({ users, user, leaderboard }) => {
   };
 
   return (
-    <div className="lg:col-span-1 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Users Panel */}
       <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
         <div className="bg-gray-700/50 p-4 border-b border-gray-600">
@@ -69,7 +69,7 @@ const Sidebar = ({ users, user, leaderboard }) => {
             </span>
           </div>
         </div>
-        <div className="p-4 max-h-80 overflow-y-auto">
+        <div className="p-4 max-h-40 overflow-y-auto">
           <div className="space-y-2">
             {users.map((roomUser) => (
               <div
@@ -122,7 +122,7 @@ const Sidebar = ({ users, user, leaderboard }) => {
             <h3 className="text-lg font-semibold text-white">Leaderboard</h3>
           </div>
         </div>
-        <div className="p-4 max-h-80 overflow-y-auto">
+        <div className="p-4 max-h-40 overflow-y-auto">
           {leaderboard.length === 0 ? (
             <div className="text-center py-8">
               <Trophy className="w-10 h-10 text-gray-600 mx-auto mb-3" />
