@@ -32,8 +32,6 @@ const JoinOrCreateRoom = () => {
   }, []);
 
   useEffect(() => {
-    // Optional: You might want to establish a temporary connection
-    // to check server status, but it's not strictly necessary here.
     const socket = io("http://localhost:5000/dsa", { autoConnect: false });
 
     socket.on("connect", () => setIsConnected(true));
