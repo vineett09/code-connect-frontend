@@ -32,8 +32,6 @@ const MainContent = ({
   submissions,
   getStatusColor,
 }) => {
-  const [showSubmissions, setShowSubmissions] = useState(false);
-
   const getStatusIcon = (status) => {
     switch (status) {
       case "accepted":
@@ -168,15 +166,14 @@ const MainContent = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
           {/* Left Side - Problem Statement */}
-          <div className="lg:col-span-3 bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden h-[560px] flex flex-col">
+          <div className="lg:col-span-3 bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden h-[600px] flex flex-col">
             <div className="bg-gray-700/50 p-4 border-b border-gray-600 flex-shrink-0">
-              {" "}
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">Problem</h3>
               </div>
             </div>
-            <div className="p-6 max-h-[500px] overflow-y-auto">
+            <div className="p-6 max-h-[500px] overflow-y-auto scrollbar-hide">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-bold text-white">
@@ -229,9 +226,8 @@ const MainContent = ({
 
           {/* Right Side - Code Editor and Submissions */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Code Editor */}
-            <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-              <div className="bg-gray-700/50 p-4 border-b border-gray-600">
+            <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden h-[600px] flex flex-col">
+              <div className="bg-gray-700/50 p-4 border-b border-gray-600 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Code className="w-5 h-5 text-green-400" />
@@ -244,18 +240,18 @@ const MainContent = ({
                   </div>
                 </div>
               </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  <div className="relative">
+              <div className="p-4 flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col space-y-4">
+                  <div className="flex-1">
                     <textarea
                       value={userCode}
                       onChange={(e) => setUserCode(e.target.value)}
-                      className="w-full h-80 font-mono text-sm bg-gray-900 border border-gray-600 rounded-lg p-4 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      className="w-full h-full font-mono text-sm bg-gray-900 border border-gray-600 rounded-lg p-4 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                       placeholder="Write your code here..."
                       spellCheck={false}
                     />
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-end flex-shrink-0">
                     <button
                       onClick={onSubmitSolution}
                       disabled={isSubmitting || !userCode.trim()}
@@ -276,79 +272,6 @@ const MainContent = ({
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Submissions Panel */}
-            <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-              <button
-                onClick={() => setShowSubmissions(!showSubmissions)}
-                className="w-full bg-gray-700/50 p-4 border-b border-gray-600 flex items-center justify-between hover:bg-gray-700/70 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-lg font-semibold text-white">
-                    Submissions
-                  </h3>
-                  <span className="bg-purple-500/10 text-purple-400 px-2 py-1 rounded-full text-sm border border-purple-500/20">
-                    {submissions.length}
-                  </span>
-                </div>
-                {showSubmissions ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
-              {showSubmissions && (
-                <div className="p-4 max-h-60 overflow-y-auto">
-                  {submissions.length === 0 ? (
-                    <div className="text-center py-8">
-                      <History className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">
-                        No submissions yet
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {submissions.map((sub, i) => (
-                        <div
-                          key={sub.id}
-                          className={`border rounded-lg p-3 ${getStatusBg(
-                            sub.status
-                          )} border-opacity-30`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(sub.status)}
-                              <span
-                                className={`font-medium capitalize text-sm ${getStatusColor(
-                                  sub.status
-                                )}`}
-                              >
-                                {sub.status}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-400">
-                              {new Date(sub.submittedAt).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          {sub.score !== undefined && (
-                            <div className="text-xs text-gray-300 mb-1">
-                              <span className="font-medium">Score:</span>{" "}
-                              {sub.score}
-                            </div>
-                          )}
-                          {sub.error && (
-                            <div className="text-xs text-red-400 bg-red-500/10 p-2 rounded mt-1">
-                              {sub.error}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

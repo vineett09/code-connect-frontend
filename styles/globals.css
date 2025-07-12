@@ -29,3 +29,11 @@ body {
 .aside-height {
   height: calc(100vh - 4rem - var(--output-panel-height));
 }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

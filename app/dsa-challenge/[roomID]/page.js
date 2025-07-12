@@ -415,7 +415,13 @@ const DSAChallengeRoom = () => {
             submissions={submissions}
             getStatusColor={getStatusColor}
           />
-          <Sidebar users={users} user={user} leaderboard={leaderboard} />
+          <Sidebar
+            users={users}
+            user={user}
+            leaderboard={leaderboard}
+            submissions={submissions}
+            getStatusColor={getStatusColor}
+          />{" "}
         </div>
       </div>
     </div>
