@@ -181,14 +181,34 @@ const DSAChallengeRoom = () => {
       setSubmissions((prev) => [...prev, data.submission]);
     });
 
+    // Add this to your socket event listeners in useEffect
     newSocket.on("evaluation-result", (data) => {
       setSubmissions((prev) =>
         prev.map((sub) =>
           sub.id === data.submission.id ? { ...sub, ...data.submission } : sub
         )
       );
+
+      // Show success/failure notification
+      if (data.submission.status === "accepted") {
+        // Show success toast/notification
+        console.log("✅ Solution accepted!");
+      } else {
+        // Show failure details
+        console.log("❌ Solution rejected:", data.submission.testResults);
+      }
     });
 
+    // Add error handling for submission evaluation
+    newSocket.on("evaluation-error", (data) => {
+      setIsSubmitting(false);
+      setError(`Evaluation failed: ${data.message}`);
+    });
+    // Add error handling for submission evaluation
+    newSocket.on("evaluation-error", (data) => {
+      setIsSubmitting(false);
+      setError(`Evaluation failed: ${data.message}`);
+    });
     newSocket.on("leaderboard-updated", (data) => {
       setLeaderboard(data.leaderboard);
     });
@@ -210,20 +230,49 @@ const DSAChallengeRoom = () => {
       setUsers(data.users);
     });
 
-    newSocket.on("error", (data) => {
-      console.error("Socket error:", data.message);
-      setError(data.message);
+    // Update the socket error handling section in your useEffect
+    newSocket.on("error", (errorData) => {
+      const errorMessage =
+        errorData?.message ||
+        (typeof errorData === "string" ? errorData : "Unknown socket error");
+
+      console.error("Socket error details:", {
+        message: errorMessage,
+        data: errorData,
+        timestamp: new Date().toISOString(),
+      });
+
+      setError(errorMessage);
       setConnectionStatus("error");
 
-      // If it's a room not found error, redirect back to the join page
+      // Only attempt redirect if we have a message and it matches our conditions
       if (
-        data.message.includes("Room not found") ||
-        data.message.includes("does not exist")
+        errorMessage.includes("Room not found") ||
+        errorMessage.includes("does not exist")
       ) {
         setTimeout(() => {
           router.push("/");
         }, 2000);
       }
+    });
+
+    // Add these additional error handlers
+    newSocket.on("connect_error", (err) => {
+      console.error("Connection error:", err.message);
+      setError(`Connection failed: ${err.message}`);
+      setConnectionStatus("error");
+    });
+
+    newSocket.on("connect_timeout", () => {
+      console.error("Connection timeout");
+      setError("Connection timed out - please check your network");
+      setConnectionStatus("error");
+    });
+
+    newSocket.on("reconnect_error", (err) => {
+      console.error("Reconnection failed:", err.message);
+      setError(`Reconnection failed: ${err.message}`);
+      setConnectionStatus("error");
     });
 
     // Connect to the socket

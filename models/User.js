@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true }, // This already creates an index
+  email: { type: String, required: true, unique: true },
   image: { type: String },
-  providerId: { type: String }, // Google or NextAuth ID
+  providerId: { type: String },
 
   // Game stats
-  solvedProblems: [{ type: String }], // problem IDs or UUIDs
+  solvedProblems: [{ type: String }],
   winCount: { type: Number, default: 0 },
   totalGames: { type: Number, default: 0 },
   currentRoomId: { type: String, default: null },
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   // Skill or preferences
   preferredTopics: [{ type: String }],
   preferredDifficulty: { type: String, default: "medium" },
-  rating: { type: Number, default: 1200 }, // Optional, if you want skill rank
+  rating: { type: Number, default: 1200 },
 
   // Optional profile
   bio: { type: String },
@@ -33,8 +33,6 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// Create indexes for better performance
-// Remove duplicate email index since unique: true already creates one
 userSchema.index({ providerId: 1 });
 userSchema.index({ rating: -1 });
 

@@ -9,10 +9,7 @@ import {
   Loader2,
   Code,
   BookOpen,
-  History,
   Zap,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 
 const MainContent = ({
@@ -29,35 +26,7 @@ const MainContent = ({
   setUserCode,
   isSubmitting,
   onSubmitSolution,
-  submissions,
-  getStatusColor,
 }) => {
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "accepted":
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case "rejected":
-        return <XCircle className="w-4 h-4 text-red-400" />;
-      case "pending":
-        return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBg = (status) => {
-    switch (status) {
-      case "accepted":
-        return "bg-green-500/10 border-green-500/20";
-      case "rejected":
-        return "bg-red-500/10 border-red-500/20";
-      case "pending":
-        return "bg-yellow-500/10 border-yellow-500/20";
-      default:
-        return "bg-gray-500/10 border-gray-500/20";
-    }
-  };
-
   return (
     <div>
       {/* Challenge Controls */}
