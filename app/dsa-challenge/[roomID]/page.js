@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { io } from "socket.io-client";
+import { useSession } from "next-auth/react"; // Import useSession
 
 // Import the new components
 import ConnectionStatus from "@/components/challengeRoom/ConnectionStatus"; // Adjust path as needed
@@ -10,6 +11,8 @@ import MainContent from "@/components/challengeRoom/MainContent";
 import Sidebar from "@/components/challengeRoom/Sidebar";
 
 const DSAChallengeRoom = () => {
+  const { data: session } = useSession(); // Get session data
+
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,6 +38,7 @@ const DSAChallengeRoom = () => {
   const [remainingTime, setRemainingTime] = useState(0);
   const [selectedTopic, setSelectedTopic] = useState("any");
   const [isGenerating, setIsGenerating] = useState(false);
+  const isReady = session && roomId && userName;
 
   const socketRef = useRef(null);
   const timerRef = useRef(null);
@@ -72,41 +76,37 @@ const DSAChallengeRoom = () => {
   ];
 
   useEffect(() => {
-    // Check if we have required params
-    if (!roomId || !userName) {
-      setError("Missing room ID or username");
-      setConnectionStatus("error");
-      return;
-    }
+    if (!isReady) return;
 
     const storedSessionId = localStorage.getItem(`dsa-session-${roomId}`);
     if (storedSessionId) {
       setSessionId(storedSessionId);
+      console.log("Using stored sessionId:", storedSessionId);
     }
 
     const newSocket = io("http://localhost:5000/dsa", {
       transports: ["websocket"],
-      autoConnect: false,
+      upgrade: false,
     });
 
-    setSocket(newSocket);
     socketRef.current = newSocket;
+    setSocket(newSocket);
 
     newSocket.on("connect", () => {
       setConnectionStatus("connected");
-      console.log("Connected to DSA namespace");
+      console.log("✅ Connected to DSA namespace");
 
-      // Join the room after connection is established
       newSocket.emit("join-dsa-room", {
         roomId: roomId,
         userName: userName,
         sessionId: storedSessionId || null,
+        userEmail: session.user.email,
       });
     });
 
     newSocket.on("disconnect", () => {
       setConnectionStatus("disconnected");
-      console.log("Disconnected from DSA namespace");
+      console.log("❌ Disconnected from DSA namespace");
     });
 
     newSocket.on("connect_error", (error) => {
@@ -123,33 +123,34 @@ const DSAChallengeRoom = () => {
       setUsers(data.users);
       setSessionId(data.sessionId);
 
-      // ✅ Save sessionId per room
       localStorage.setItem(`dsa-session-${data.room.id}`, data.sessionId);
 
-      // ✅ Restore current challenge from backend
       setCurrentChallenge(data.room.currentChallenge);
-
-      // ✅ Restore remaining time
       setRemainingTime(data.room.remainingTime);
 
-      // ✅ Restore user code if exists in localStorage
       const savedCode = localStorage.getItem(
         `code-${data.room.id}-${data.user.id}`
       );
       if (savedCode) {
         setUserCode(savedCode);
       } else if (data.room.currentChallenge) {
-        // Set initial code template for current challenge if no saved code
         const lang = languages.find((l) => l.id === selectedLanguage);
         if (lang) setUserCode(lang.template);
       }
 
-      // ✅ Do NOT reset currentChallenge or status manually
+      // ✅ Use backend-provided submissions
+      if (data.submissions) {
+        setSubmissions(data.submissions);
+      }
+
+      // ✅ Use backend-provided leaderboard
+      if (data.leaderboard) {
+        setLeaderboard(data.leaderboard);
+      }
     });
 
     newSocket.on("room-topic-updated", (data) => {
       setSelectedTopic(data.topic);
-      // Optionally show a toast: `Topic updated to ${data.topic} by ${data.updatedBy}`
     });
 
     newSocket.on("dsa-users-list-sync", (data) => {
@@ -161,15 +162,13 @@ const DSAChallengeRoom = () => {
       setRemainingTime(data.room.remainingTime);
       setSubmissions([]);
 
-      // ✅ Update room status to active
       setRoom((prev) => ({
         ...prev,
         status: "active",
-        currentChallenge: data.challenge, // Also attach if needed
+        currentChallenge: data.challenge,
       }));
-      setIsGenerating(false); // ✅ stop loading when challenge arrives
+      setIsGenerating(false);
 
-      // Reset code to template
       const lang = languages.find((l) => l.id === selectedLanguage);
       if (lang) {
         setUserCode(lang.template);
@@ -181,7 +180,6 @@ const DSAChallengeRoom = () => {
       setSubmissions((prev) => [...prev, data.submission]);
     });
 
-    // Add this to your socket event listeners in useEffect
     newSocket.on("evaluation-result", (data) => {
       setSubmissions((prev) =>
         prev.map((sub) =>
@@ -189,29 +187,22 @@ const DSAChallengeRoom = () => {
         )
       );
 
-      // Show success/failure notification
       if (data.submission.status === "accepted") {
-        // Show success toast/notification
         console.log("✅ Solution accepted!");
       } else {
-        // Show failure details
         console.log("❌ Solution rejected:", data.submission.testResults);
       }
     });
 
-    // Add error handling for submission evaluation
     newSocket.on("evaluation-error", (data) => {
       setIsSubmitting(false);
       setError(`Evaluation failed: ${data.message}`);
     });
-    // Add error handling for submission evaluation
-    newSocket.on("evaluation-error", (data) => {
-      setIsSubmitting(false);
-      setError(`Evaluation failed: ${data.message}`);
-    });
+
     newSocket.on("leaderboard-updated", (data) => {
       setLeaderboard(data.leaderboard);
     });
+
     newSocket.on("challenge-ended", (data) => {
       setRoom(data.room);
       setCurrentChallenge(null);
@@ -230,7 +221,6 @@ const DSAChallengeRoom = () => {
       setUsers(data.users);
     });
 
-    // Update the socket error handling section in your useEffect
     newSocket.on("error", (errorData) => {
       const errorMessage =
         errorData?.message ||
@@ -245,7 +235,6 @@ const DSAChallengeRoom = () => {
       setError(errorMessage);
       setConnectionStatus("error");
 
-      // Only attempt redirect if we have a message and it matches our conditions
       if (
         errorMessage.includes("Room not found") ||
         errorMessage.includes("does not exist")
@@ -254,13 +243,6 @@ const DSAChallengeRoom = () => {
           router.push("/");
         }, 2000);
       }
-    });
-
-    // Add these additional error handlers
-    newSocket.on("connect_error", (err) => {
-      console.error("Connection error:", err.message);
-      setError(`Connection failed: ${err.message}`);
-      setConnectionStatus("error");
     });
 
     newSocket.on("connect_timeout", () => {
@@ -275,22 +257,34 @@ const DSAChallengeRoom = () => {
       setConnectionStatus("error");
     });
 
-    // Connect to the socket
     newSocket.connect();
+
+    // ✅ Heartbeat
+    const heartbeatInterval = setInterval(() => {
+      if (newSocket.connected) {
+        newSocket.emit("heartbeat", { timestamp: Date.now() });
+      }
+    }, 15000);
+    timerRef.current = heartbeatInterval;
 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      newSocket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
-  }, [roomId, userName, router]);
+  }, [isReady]);
+
   useEffect(() => {
     if (currentChallenge) {
       const lang = languages.find((l) => l.id === selectedLanguage);
       if (lang) setUserCode(lang.template);
     }
   }, [selectedLanguage, currentChallenge]);
+
   useEffect(() => {
     if (room && user && userCode) {
       localStorage.setItem(`code-${room.id}-${user.id}`, userCode);
