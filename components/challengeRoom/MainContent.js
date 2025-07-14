@@ -223,7 +223,8 @@ const MainContent = ({
                   <div className="flex justify-end flex-shrink-0">
                     <button
                       onClick={onSubmitSolution}
-                      disabled={isSubmitting || !userCode.trim()}
+                      disabled={isSubmitting || !(userCode || "").trim()}
+                      value={userCode || ""}
                       className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                     >
                       {isSubmitting ? (

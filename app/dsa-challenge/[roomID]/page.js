@@ -39,40 +39,17 @@ const DSAChallengeRoom = () => {
   const [selectedTopic, setSelectedTopic] = useState("any");
   const [isGenerating, setIsGenerating] = useState(false);
   const isReady = session && roomId && userName;
+  const [shouldSetTemplate, setShouldSetTemplate] = useState(false);
 
   const socketRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Available languages
   const languages = [
-    {
-      id: "javascript",
-      name: "JavaScript",
-      template: "function solution() {\n    // Your code here\n}",
-    },
-    {
-      id: "python",
-      name: "Python",
-      template: "def solution():\n    # Your code here\n    pass",
-    },
-    {
-      id: "cpp",
-      name: "C++",
-      template:
-        "#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}",
-    },
-    {
-      id: "java",
-      name: "Java",
-      template:
-        "public class Solution {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}",
-    },
-    {
-      id: "go",
-      name: "Go",
-      template:
-        'package main\n\nimport "fmt"\n\nfunc main() {\n    // Your code here\n}',
-    },
+    { id: "javascript", name: "JavaScript" },
+    { id: "python", name: "Python" },
+    { id: "cpp", name: "C++" },
+    { id: "java", name: "Java" },
+    { id: "go", name: "Go" },
   ];
 
   useEffect(() => {
@@ -128,22 +105,28 @@ const DSAChallengeRoom = () => {
       setCurrentChallenge(data.room.currentChallenge);
       setRemainingTime(data.room.remainingTime);
 
-      const savedCode = localStorage.getItem(
-        `code-${data.room.id}-${data.user.id}`
-      );
-      if (savedCode) {
-        setUserCode(savedCode);
+      // In dsa-room-joined
+      if (data.userCode && data.userCode.trim() !== "") {
+        setUserCode(data.userCode);
+        setShouldSetTemplate(false);
       } else if (data.room.currentChallenge) {
         const lang = languages.find((l) => l.id === selectedLanguage);
-        if (lang) setUserCode(lang.template);
+        if (lang && lang.template) {
+          setUserCode(lang.template || "");
+          setShouldSetTemplate(false);
+        } else {
+          setUserCode("");
+          setShouldSetTemplate(false);
+        }
+      } else {
+        setUserCode("");
+        setShouldSetTemplate(false);
       }
 
-      // ✅ Use backend-provided submissions
       if (data.submissions) {
         setSubmissions(data.submissions);
       }
 
-      // ✅ Use backend-provided leaderboard
       if (data.leaderboard) {
         setLeaderboard(data.leaderboard);
       }
@@ -169,12 +152,14 @@ const DSAChallengeRoom = () => {
       }));
       setIsGenerating(false);
 
-      const lang = languages.find((l) => l.id === selectedLanguage);
-      if (lang) {
-        setUserCode(lang.template);
+      // Set the AI-generated template for the selected language
+      if (
+        data.challenge.template &&
+        data.challenge.template[selectedLanguage]
+      ) {
+        setUserCode(data.challenge.template[selectedLanguage]);
       }
     });
-
     newSocket.on("solution-submitted", (data) => {
       setIsSubmitting(false);
       setSubmissions((prev) => [...prev, data.submission]);
@@ -277,16 +262,37 @@ const DSAChallengeRoom = () => {
       }
     };
   }, [isReady]);
-
   useEffect(() => {
-    if (currentChallenge) {
-      const lang = languages.find((l) => l.id === selectedLanguage);
-      if (lang) setUserCode(lang.template);
+    if (!socket || !room || !user) return;
+
+    const interval = setInterval(() => {
+      if (userCode && room && user) {
+        socket.emit("save-code", {
+          roomId: room.id,
+          code: userCode,
+        });
+
+        // ✅ Debug console log
+        console.log(
+          `[DEBUG] ✅ Code saved to server memory at ${new Date().toLocaleTimeString()}`
+        );
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [socket, room, user, userCode]);
+  useEffect(() => {
+    if (shouldSetTemplate && currentChallenge && currentChallenge.template) {
+      const templateCode = currentChallenge.template[selectedLanguage];
+      if (templateCode) {
+        setUserCode(templateCode);
+      }
+      setShouldSetTemplate(false);
     }
-  }, [selectedLanguage, currentChallenge]);
+  }, [selectedLanguage, currentChallenge, shouldSetTemplate]);
 
   useEffect(() => {
-    if (room && user && userCode) {
+    if (room && user && userCode !== undefined) {
       localStorage.setItem(`code-${room.id}-${user.id}`, userCode);
     }
   }, [userCode, room, user]);
@@ -392,6 +398,10 @@ const DSAChallengeRoom = () => {
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
+  const handleLanguageChange = (langId) => {
+    setSelectedLanguage(langId);
+    setShouldSetTemplate(true); // tell useEffect to set new template
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -449,7 +459,7 @@ const DSAChallengeRoom = () => {
             isGenerating={isGenerating}
             onEndChallenge={handleEndChallenge}
             selectedLanguage={selectedLanguage}
-            onLanguageChange={setSelectedLanguage}
+            onLanguageChange={handleLanguageChange}
             languages={languages}
             userCode={userCode}
             setUserCode={setUserCode}
