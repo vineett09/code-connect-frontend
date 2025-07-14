@@ -263,24 +263,22 @@ const DSAChallengeRoom = () => {
     };
   }, [isReady]);
   useEffect(() => {
-    if (!socket || !room || !user) return;
+    if (!socket || !room || !user || !userCode || room.status !== "active")
+      return;
 
-    const interval = setInterval(() => {
-      if (userCode && room && user) {
-        socket.emit("save-code", {
-          roomId: room.id,
-          code: userCode,
-        });
+    const debounceTimer = setTimeout(() => {
+      socket.emit("save-code", {
+        roomId: room.id,
+        code: userCode,
+      });
+      console.log(
+        `[DEBUG] ✅ Code saved after 2 seconds inactivity at ${new Date().toLocaleTimeString()}`
+      );
+    }, 2000); // 2 seconds
 
-        // ✅ Debug console log
-        console.log(
-          `[DEBUG] ✅ Code saved to server memory at ${new Date().toLocaleTimeString()}`
-        );
-      }
-    }, 3000);
+    return () => clearTimeout(debounceTimer);
+  }, [userCode]);
 
-    return () => clearInterval(interval);
-  }, [socket, room, user, userCode]);
   useEffect(() => {
     if (shouldSetTemplate && currentChallenge && currentChallenge.template) {
       const templateCode = currentChallenge.template[selectedLanguage];
