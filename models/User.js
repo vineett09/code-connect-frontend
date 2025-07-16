@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   // Skill or preferences
   preferredTopics: [{ type: String }],
   preferredDifficulty: { type: String, default: "medium" },
-  rating: { type: Number, default: 1200 },
+  rating: { type: Number, default: 0 },
 
   // Optional profile
   bio: { type: String },

@@ -9,13 +9,18 @@ import ConnectionStatus from "@/components/challengeRoom/ConnectionStatus"; // A
 import RoomHeader from "@/components/challengeRoom/RoomHeader";
 import MainContent from "@/components/challengeRoom/MainContent";
 import Sidebar from "@/components/challengeRoom/Sidebar";
-
+import {
+  NotificationProvider,
+  useNotification,
+} from "@/context/NotificationContext"; // Adjust path if needed
+import NotificationContainer from "@/components/challengeRoom/NotificationContainer";
 const DSAChallengeRoom = () => {
   const { data: session } = useSession(); // Get session data
 
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { addNotification } = useNotification();
 
   const roomId = params.roomID;
   const userName = searchParams.get("userName");
@@ -83,6 +88,11 @@ const DSAChallengeRoom = () => {
 
     newSocket.on("disconnect", () => {
       setConnectionStatus("disconnected");
+      addNotification(
+        "Disconnected from the server. Attempting to reconnect...",
+        "error"
+      );
+
       console.log("❌ Disconnected from DSA namespace");
     });
 
@@ -131,7 +141,10 @@ const DSAChallengeRoom = () => {
         setLeaderboard(data.leaderboard);
       }
     });
-
+    // Listen for generic notifications from the server
+    newSocket.on("notification", ({ type, message }) => {
+      addNotification(message, type);
+    });
     newSocket.on("room-topic-updated", (data) => {
       setSelectedTopic(data.topic);
     });
@@ -218,6 +231,8 @@ const DSAChallengeRoom = () => {
       });
 
       setError(errorMessage);
+      addNotification(errorMessage, "error");
+
       setConnectionStatus("error");
 
       if (
@@ -261,7 +276,7 @@ const DSAChallengeRoom = () => {
         socketRef.current = null;
       }
     };
-  }, [isReady]);
+  }, [isReady, addNotification]);
   useEffect(() => {
     if (!socket || !room || !user || !userCode || room.status !== "active")
       return;
@@ -322,6 +337,8 @@ const DSAChallengeRoom = () => {
     if (!room) return;
     navigator.clipboard.writeText(room.id).then(() => {
       setCopied(true);
+      addNotification("Room ID copied to clipboard!", "success");
+
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -434,6 +451,8 @@ const DSAChallengeRoom = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <NotificationContainer />
+
       <RoomHeader
         room={room}
         user={user}
@@ -478,5 +497,12 @@ const DSAChallengeRoom = () => {
     </div>
   );
 };
-
-export default DSAChallengeRoom;
+// Create a wrapper component to provide the context
+const DSAChallengeRoomContent = () => {
+  return (
+    <NotificationProvider>
+      <DSAChallengeRoom />
+    </NotificationProvider>
+  );
+};
+export default DSAChallengeRoomContent;
