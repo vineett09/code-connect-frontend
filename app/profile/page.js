@@ -121,11 +121,6 @@ export default function ProfilePage() {
     }));
   };
 
-  const calculateWinRate = () => {
-    if (!userProfile || userProfile.totalGames === 0) return 0;
-    return Math.round((userProfile.winCount / userProfile.totalGames) * 100);
-  };
-
   const getRatingColor = (rating) => {
     if (rating >= 1800) return "text-red-400";
     if (rating >= 1600) return "text-orange-400";
@@ -133,7 +128,69 @@ export default function ProfilePage() {
     if (rating >= 1200) return "text-green-400";
     return "text-blue-400";
   };
+  // Add these new calculation functions after your existing calculateWinRate function:
 
+  const calculateWinRate = () => {
+    if (!userProfile || userProfile.totalGames === 0) return 0;
+    return Math.round((userProfile.winCount / userProfile.totalGames) * 100);
+  };
+
+  // ADD these new functions:
+  const calculateAcceptanceRate = () => {
+    if (!userProfile || userProfile.totalSubmissions === 0) return 0;
+    return Math.round(
+      (userProfile.acceptedSubmissions / userProfile.totalSubmissions) * 100
+    );
+  };
+
+  const getTotalProblemsolved = () => {
+    if (!userProfile) return 0;
+    return (
+      (userProfile.easyProblems || 0) +
+      (userProfile.mediumProblems || 0) +
+      (userProfile.hardProblems || 0)
+    );
+  };
+
+  const getPerformanceStats = () => {
+    if (!userProfile) return { games: 0, wins: 0, losses: 0, winRate: 0 };
+
+    return {
+      games: userProfile.totalGames || 0,
+      wins: userProfile.winCount || 0,
+      losses: userProfile.lossCount || 0,
+      winRate: calculateWinRate(),
+    };
+  };
+
+  const getDifficultyBreakdown = () => {
+    if (!userProfile) return { easy: 0, medium: 0, hard: 0 };
+
+    return {
+      easy: userProfile.easyProblems || 0,
+      medium: userProfile.mediumProblems || 0,
+      hard: userProfile.hardProblems || 0,
+    };
+  };
+
+  const getScoreStats = () => {
+    if (!userProfile) return { average: 0, best: 0, total: 0 };
+
+    return {
+      average: Math.round(userProfile.averageScore || 0),
+      best: userProfile.bestScore || 0,
+      total: userProfile.totalScore || 0,
+    };
+  };
+
+  const getStreakInfo = () => {
+    if (!userProfile) return { current: 0, longest: 0 };
+
+    return {
+      current: userProfile.currentStreak || 0,
+      longest: userProfile.longestStreak || 0,
+    };
+  };
   const getRatingLevel = (rating) => {
     if (rating >= 1800) return "Expert";
     if (rating >= 1600) return "Advanced";
@@ -157,7 +214,10 @@ export default function ProfilePage() {
       </div>
     );
   }
-
+  const performanceStats = getPerformanceStats();
+  const difficultyBreakdown = getDifficultyBreakdown();
+  const scoreStats = getScoreStats();
+  const streakInfo = getStreakInfo();
   return (
     <div className="min-h-screen bg-[#0d1117] pt-20 pb-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -228,6 +288,96 @@ export default function ProfilePage() {
               )}
               {isEditing ? "Cancel" : "Edit Profile"}
             </button>
+          </div>
+        </div>
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Performance Stats */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <Trophy className="text-yellow-400 w-6 h-6" />
+              <span className="text-sm text-gray-400">Performance</span>
+            </div>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-white">
+                {performanceStats.winRate}%
+              </div>
+              <div className="text-sm text-gray-300">
+                {performanceStats.wins}W / {performanceStats.losses}L
+              </div>
+              <div className="text-xs text-gray-500">
+                from {performanceStats.games} games
+              </div>
+            </div>
+          </div>
+
+          {/* Problems Solved */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <Code2 className="text-green-400 w-6 h-6" />
+              <span className="text-sm text-gray-400">Problems Solved</span>
+            </div>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-white">
+                {getTotalProblemsolved()}
+              </div>
+              <div className="text-sm text-gray-300">
+                <span className="text-green-400">
+                  {difficultyBreakdown.easy}E
+                </span>{" "}
+                /
+                <span className="text-yellow-400">
+                  {difficultyBreakdown.medium}M
+                </span>{" "}
+                /
+                <span className="text-red-400">
+                  {difficultyBreakdown.hard}H
+                </span>
+              </div>
+              <div className="text-xs text-gray-500">
+                {calculateAcceptanceRate()}% acceptance rate
+              </div>
+            </div>
+          </div>
+
+          {/* Rating & Level */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <Star className="text-purple-400 w-6 h-6" />
+              <span className="text-sm text-gray-400">Rating</span>
+            </div>
+            <div className="space-y-2">
+              <div
+                className={`text-2xl font-bold ${getRatingColor(
+                  userProfile?.rating || 0
+                )}`}
+              >
+                {userProfile?.rating || 0}
+              </div>
+              <div className="text-sm text-gray-300">
+                {getRatingLevel(userProfile?.rating || 0)}
+              </div>
+              <div className="text-xs text-gray-500">
+                Avg Score: {scoreStats.average}
+              </div>
+            </div>
+          </div>
+
+          {/* Streak */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <TrendingUp className="text-orange-400 w-6 h-6" />
+              <span className="text-sm text-gray-400">Streak</span>
+            </div>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-white">
+                {streakInfo.current}
+              </div>
+              <div className="text-sm text-gray-300">Current Win Streak</div>
+              <div className="text-xs text-gray-500">
+                Best: {streakInfo.longest}
+              </div>
+            </div>
           </div>
         </div>
 

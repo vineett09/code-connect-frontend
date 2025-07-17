@@ -1,11 +1,23 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { io } from "socket.io-client";
-import { Users, Plus, Hash, User, Settings, Code } from "lucide-react";
+import {
+  Users,
+  Plus,
+  Hash,
+  User,
+  Settings,
+  Code,
+  X,
+  LogIn,
+  LogOut,
+} from "lucide-react";
 
 const JoinOrCreateRoom = () => {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [formMode, setFormMode] = useState("join"); // 'join' or 'create'
   const [createForm, setCreateForm] = useState({
     roomName: "",
@@ -22,6 +34,26 @@ const JoinOrCreateRoom = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Auto-fill username when session is available
+  useEffect(() => {
+    if (session?.user) {
+      const displayName =
+        session.user.name || session.user.email || "Anonymous";
+      setCreateForm((prev) => ({ ...prev, userName: displayName }));
+      setJoinForm((prev) => ({ ...prev, userName: displayName }));
+    }
+  }, [session]);
+
+  // Check authentication status and show modal if needed
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      setShowLoginModal(true);
+    } else if (status === "authenticated") {
+      setShowLoginModal(false);
+    }
+  }, [status]);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -45,6 +77,11 @@ const JoinOrCreateRoom = () => {
   }, []);
 
   const handleCreateRoom = async () => {
+    if (!session) {
+      setShowLoginModal(true);
+      return;
+    }
+
     if (!createForm.roomName.trim() || !createForm.userName.trim()) {
       setError("Please fill in all fields");
       return;
@@ -66,6 +103,7 @@ const JoinOrCreateRoom = () => {
             difficulty: createForm.difficulty,
             isPrivate: createForm.isPrivate,
             userName: createForm.userName,
+            userId: session.user.id || session.user.email, // Include user ID
           }),
         }
       );
@@ -73,7 +111,6 @@ const JoinOrCreateRoom = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Redirect to the new room page
         router.push(
           `/dsa-challenge/${data.room.id}?userName=${encodeURIComponent(
             createForm.userName
@@ -92,6 +129,12 @@ const JoinOrCreateRoom = () => {
 
   const handleJoinRoom = (e) => {
     e.preventDefault();
+
+    if (!session) {
+      setShowLoginModal(true);
+      return;
+    }
+
     if (!joinForm.roomId.trim() || !joinForm.userName.trim()) {
       setError("Please fill in all fields");
       return;
@@ -100,7 +143,6 @@ const JoinOrCreateRoom = () => {
     setIsJoining(true);
     setError("");
 
-    // Redirect to the room page, passing username as a query param
     router.push(
       `/dsa-challenge/${joinForm.roomId.trim()}?userName=${encodeURIComponent(
         joinForm.userName.trim()
@@ -117,10 +159,60 @@ const JoinOrCreateRoom = () => {
     }
   };
 
+  const handleLogin = async (provider) => {
+    try {
+      await signIn(provider);
+    } catch (error) {
+      console.error("Login error:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const isLoading = formMode === "create" ? isCreating : isJoining;
+
+  // Login Modal Component
+  const LoginModal = () => (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl border border-white/10 p-8 max-w-md w-full shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-white">Sign In Required</h3>
+          <button
+            onClick={() => setShowLoginModal(false)}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <p className="text-gray-300 mb-6">
+          Please sign in to create or join DSA challenge rooms.
+        </p>
+
+        <div className="space-y-4">
+          <button
+            onClick={() => handleLogin("google")}
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 px-6 py-3 rounded-xl font-medium transition-all flex items-center justify-center space-x-2"
+          >
+            <LogIn className="w-5 h-5" />
+            <span>Sign in with Google</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Login Modal */}
+      {showLoginModal && <LoginModal />}
+
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-2xl">
@@ -209,7 +301,7 @@ const JoinOrCreateRoom = () => {
                       placeholder="Enter your display name"
                       className="w-full pl-12 pr-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || !session}
                     />
                   </div>
                 </div>
@@ -236,7 +328,7 @@ const JoinOrCreateRoom = () => {
                         placeholder="Enter room ID"
                         className="w-full pl-12 pr-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                         required
-                        disabled={isLoading}
+                        disabled={isLoading || !session}
                       />
                     </div>
                   </div>
@@ -263,7 +355,7 @@ const JoinOrCreateRoom = () => {
                         placeholder="e.g., Algorithm Practice Session"
                         className="w-full px-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                         required
-                        disabled={isLoading}
+                        disabled={isLoading || !session}
                       />
                     </div>
 
@@ -282,7 +374,7 @@ const JoinOrCreateRoom = () => {
                           setError("");
                         }}
                         className="w-full px-4 py-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        disabled={isLoading}
+                        disabled={isLoading || !session}
                       >
                         <option value="easy" className="bg-slate-800">
                           Easy
@@ -309,7 +401,7 @@ const JoinOrCreateRoom = () => {
                           setError("");
                         }}
                         className="w-4 h-4 text-purple-600 bg-slate-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
-                        disabled={isLoading}
+                        disabled={isLoading || !session}
                       />
                       <label
                         htmlFor="isPrivate"
@@ -329,6 +421,7 @@ const JoinOrCreateRoom = () => {
                 <button
                   type="submit"
                   disabled={
+                    !session ||
                     isLoading ||
                     (formMode === "join" &&
                       (!joinForm.userName.trim() || !joinForm.roomId.trim())) ||
@@ -338,7 +431,12 @@ const JoinOrCreateRoom = () => {
                   }
                   className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-semibold text-lg transition-all transform disabled:transform-none shadow-lg hover:shadow-2xl hover:shadow-purple-500/25"
                 >
-                  {isLoading ? (
+                  {!session ? (
+                    <span className="flex items-center justify-center space-x-2">
+                      <LogIn className="w-5 h-5" />
+                      <span>Sign In to Continue</span>
+                    </span>
+                  ) : isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>
@@ -370,6 +468,14 @@ const JoinOrCreateRoom = () => {
                   <div className="flex items-center space-x-2">
                     <div
                       className={`w-2 h-2 rounded-full ${
+                        session ? "bg-green-400 animate-pulse" : "bg-yellow-400"
+                      }`}
+                    ></div>
+                    <span>{session ? "Authenticated" : "Not Signed In"}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
                         isConnected
                           ? "bg-green-400 animate-pulse"
                           : "bg-red-400"
@@ -380,10 +486,6 @@ const JoinOrCreateRoom = () => {
                   <div className="flex items-center space-x-2">
                     <Code className="w-4 h-4" />
                     <span>DSA Challenges</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-4 h-4" />
-                    <span>Collaborative</span>
                   </div>
                 </div>
               </div>

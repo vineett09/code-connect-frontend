@@ -26,19 +26,75 @@ export async function POST(request) {
 
     await connectToDatabase();
 
+    // Find the user first to calculate streaks
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    // Calculate streak
+    const today = new Date();
+    const lastGame = user.lastGameDate;
+    let newStreak = user.currentStreak;
+
+    if (stats.won) {
+      if (lastGame && isConsecutiveDay(lastGame, today)) {
+        newStreak = user.currentStreak + 1;
+      } else {
+        newStreak = 1;
+      }
+    } else {
+      newStreak = 0;
+    }
+
+    // Calculate difficulty-based increments
+    const difficultyUpdates = {};
+    if (stats.solvedProblems && stats.problemDifficulties) {
+      stats.problemDifficulties.forEach((difficulty) => {
+        switch (difficulty) {
+          case "easy":
+            difficultyUpdates.easyProblems =
+              (difficultyUpdates.easyProblems || 0) + 1;
+            break;
+          case "medium":
+            difficultyUpdates.mediumProblems =
+              (difficultyUpdates.mediumProblems || 0) + 1;
+            break;
+          case "hard":
+            difficultyUpdates.hardProblems =
+              (difficultyUpdates.hardProblems || 0) + 1;
+            break;
+        }
+      });
+    }
+
+    // Calculate new average score
+    const newTotalScore = user.totalScore + (stats.score || 0);
+    const newTotalGames = user.totalGames + 1;
+    const newAverageScore = newTotalScore / newTotalGames;
+
     const updatedUser = await User.findOneAndUpdate(
       { email: email },
       {
         $inc: {
           totalGames: 1,
           winCount: stats.won ? 1 : 0,
+          lossCount: stats.won ? 0 : 1,
           rating: stats.ratingChange || 0,
+          totalSubmissions: stats.submissions || 0,
+          acceptedSubmissions: stats.acceptedSubmissions || 0,
+          totalScore: stats.score || 0,
+          ...difficultyUpdates,
         },
-
         $addToSet: {
           solvedProblems: { $each: stats.solvedProblems || [] },
         },
         $set: {
+          averageScore: newAverageScore,
+          bestScore: Math.max(user.bestScore, stats.score || 0),
+          currentStreak: newStreak,
+          longestStreak: Math.max(user.longestStreak, newStreak),
+          lastGameDate: today,
           updatedAt: new Date(),
         },
       },
@@ -47,11 +103,6 @@ export async function POST(request) {
         upsert: false,
       }
     );
-
-    if (!updatedUser) {
-      console.log(`User with email ${email} not found for stat update.`);
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
 
     console.log(`Successfully updated stats for user: ${email}`);
 
@@ -70,4 +121,11 @@ export async function POST(request) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to check consecutive days
+function isConsecutiveDay(lastDate, currentDate) {
+  const oneDay = 24 * 60 * 60 * 1000;
+  const timeDiff = currentDate.getTime() - lastDate.getTime();
+  return timeDiff >= 0 && timeDiff <= oneDay;
 }

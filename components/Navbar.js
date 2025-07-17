@@ -9,7 +9,18 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  if (status === "loading") return null;
+  if (status === "loading") {
+    return (
+      <nav className="fixed top-0 w-full bg-gray-900/95 backdrop-blur-md border-b border-gray-800 z-50 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="w-32 h-6 bg-gray-700 rounded animate-pulse"></div>
+            <div className="w-24 h-8 bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="fixed top-0 w-full bg-gray-900/95 backdrop-blur-md border-b border-gray-800 z-50 shadow-lg">
@@ -36,7 +47,7 @@ export default function Navbar() {
                 >
                   <UserCircle2 className="w-5 h-5 text-purple-400" />
                   <span className="text-gray-300 text-sm truncate max-w-[120px]">
-                    {session.user.name}
+                    Hi, {session.user.name}
                   </span>
                 </Link>
                 <button
@@ -78,12 +89,15 @@ export default function Navbar() {
             <div className="border-t border-gray-700 pt-3 mt-3">
               {session ? (
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <Link
+                    href="/profile"
+                    className="flex items-center space-x-2 px-3 py-2 bg-gray-800/50 rounded-lg border border-gray-700 hover:bg-gray-700/50 transition-colors"
+                  >
                     <UserCircle2 className="w-5 h-5 text-purple-400" />
                     <span className="text-gray-300 text-sm">
                       {session.user.name}
                     </span>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => signOut()}
                     className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-4 py-2 rounded-lg text-sm text-white transition-all"

@@ -6,10 +6,32 @@ const userSchema = new mongoose.Schema({
   image: { type: String },
   providerId: { type: String },
 
-  // Game stats
+  // Enhanced game stats
   solvedProblems: [{ type: String }],
   winCount: { type: Number, default: 0 },
   totalGames: { type: Number, default: 0 },
+
+  // ADD these new fields:
+  lossCount: { type: Number, default: 0 },
+
+  // Difficulty-based stats
+  easyProblems: { type: Number, default: 0 },
+  mediumProblems: { type: Number, default: 0 },
+  hardProblems: { type: Number, default: 0 },
+
+  // Submission stats
+  totalSubmissions: { type: Number, default: 0 },
+  acceptedSubmissions: { type: Number, default: 0 },
+
+  // Performance metrics
+  averageScore: { type: Number, default: 0 },
+  bestScore: { type: Number, default: 0 },
+  totalScore: { type: Number, default: 0 },
+
+  // Streak tracking
+  currentStreak: { type: Number, default: 0 },
+  longestStreak: { type: Number, default: 0 },
+  lastGameDate: { type: Date },
   currentRoomId: { type: String, default: null },
 
   // Skill or preferences
