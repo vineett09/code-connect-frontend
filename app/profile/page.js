@@ -290,8 +290,9 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-        {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+        {/* Enhanced Stats Grid with Recent Activity */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           {/* Performance Stats */}
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-4">
@@ -379,25 +380,43 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Recent Activity */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <Calendar className="text-blue-400 w-6 h-6" />
+              <span className="text-sm text-gray-400">Recent Activity</span>
+            </div>
+            <div className="space-y-3">
+              {userProfile.currentRoomId ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div>
+                    <p className="text-green-400 text-sm font-medium">
+                      In game now
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      Room: {userProfile.currentRoomId}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Not in game</p>
+                  </div>
+                </div>
+              )}
+              <div className="text-xs text-gray-500">
+                Updated: {new Date(userProfile.updatedAt).toLocaleDateString()}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-blue-500/20 rounded-lg p-2">
-                <Star className="w-5 h-5 text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">Rating</h3>
-            </div>
-            <div className="text-3xl font-bold text-blue-400">
-              {userProfile.rating}
-            </div>
-            <p className="text-sm text-gray-400 mt-1">
-              {getRatingLevel(userProfile.rating)}
-            </p>
-          </div>
-
           <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-xl border border-green-500/20 p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="bg-green-500/20 rounded-lg p-2">
@@ -424,21 +443,6 @@ export default function ProfilePage() {
               {userProfile.totalGames}
             </div>
             <p className="text-sm text-gray-400 mt-1">Games played</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 backdrop-blur-sm rounded-xl border border-orange-500/20 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-orange-500/20 rounded-lg p-2">
-                <Brain className="w-5 h-5 text-orange-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                Problems Solved
-              </h3>
-            </div>
-            <div className="text-3xl font-bold text-orange-400">
-              {userProfile.solvedProblems?.length || 0}
-            </div>
-            <p className="text-sm text-gray-400 mt-1">Unique problems</p>
           </div>
         </div>
 
@@ -615,37 +619,6 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-6">
-              <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Recent Activity
-              </h2>
-
-              <div className="space-y-4">
-                {userProfile.currentRoomId && (
-                  <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <div>
-                      <p className="text-green-400 text-sm font-medium">
-                        Currently in game
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        Room: {userProfile.currentRoomId}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-gray-400 text-sm">
-                  <p>
-                    Last updated:{" "}
-                    {new Date(userProfile.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

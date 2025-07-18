@@ -45,7 +45,7 @@ const DSAChallengeRoom = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const isReady = session && roomId && userName;
   const [shouldSetTemplate, setShouldSetTemplate] = useState(false);
-
+  const [lastSubmission, setLastSubmission] = useState(null);
   const socketRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -184,7 +184,7 @@ const DSAChallengeRoom = () => {
           sub.id === data.submission.id ? { ...sub, ...data.submission } : sub
         )
       );
-
+      setLastSubmission(data.submission);
       if (data.submission.status === "accepted") {
         console.log("✅ Solution accepted!");
       } else {
@@ -484,6 +484,7 @@ const DSAChallengeRoom = () => {
             onSubmitSolution={handleSubmitSolution}
             submissions={submissions}
             getStatusColor={getStatusColor}
+            lastSubmission={lastSubmission}
           />
           <Sidebar
             users={users}

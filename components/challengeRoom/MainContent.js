@@ -10,8 +10,10 @@ import {
   Code,
   BookOpen,
   Zap,
+  AlertCircle,
 } from "lucide-react";
-
+import TestCasePanel from "@/components/challengeRoom/TestCasePanel";
+import TerminalPanel from "@/components/challengeRoom/TerminalPanel";
 const MainContent = ({
   room,
   user,
@@ -26,11 +28,12 @@ const MainContent = ({
   setUserCode,
   isSubmitting,
   onSubmitSolution,
+  lastSubmission,
 }) => {
   return (
     <div>
       {/* Challenge Controls */}
-      <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 border border-gray-700">
+      <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 border border-gray-700 ">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {user?.name === room?.createdBy && (
@@ -92,6 +95,19 @@ const MainContent = ({
             </select>
           </div>
         </div>
+
+        {/* Owner Note - Only show for room creator when challenge is active */}
+        {user?.name === room?.createdBy &&
+          room?.status === "active" &&
+          currentChallenge && (
+            <div className="mt-4 flex items-center justify-center gap-2 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="text-amber-400 text-sm">
+                Please end the challenge before leaving the room to save the
+                results.
+              </span>
+            </div>
+          )}
       </div>
 
       {/* Main Content Area */}
@@ -245,6 +261,19 @@ const MainContent = ({
             </div>
           </div>
         </div>
+      )}
+      {lastSubmission && (
+        <>
+          <TestCasePanel testResults={lastSubmission.testResults} />
+          <TerminalPanel
+            rawError={
+              lastSubmission.error ||
+              lastSubmission.testResults?.find((t) => t.error)?.error ||
+              lastSubmission.testResults?.find((t) => t.compilationError)
+                ?.compilationError
+            }
+          />
+        </>
       )}
     </div>
   );
