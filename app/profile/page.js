@@ -292,7 +292,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Enhanced Stats Grid with Recent Activity */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Performance Stats */}
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-4">
@@ -377,39 +377,6 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-300">Current Win Streak</div>
               <div className="text-xs text-gray-500">
                 Best: {streakInfo.longest}
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <Calendar className="text-blue-400 w-6 h-6" />
-              <span className="text-sm text-gray-400">Recent Activity</span>
-            </div>
-            <div className="space-y-3">
-              {userProfile.currentRoomId ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <div>
-                    <p className="text-green-400 text-sm font-medium">
-                      In game now
-                    </p>
-                    <p className="text-gray-400 text-xs">
-                      Room: {userProfile.currentRoomId}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Not in game</p>
-                  </div>
-                </div>
-              )}
-              <div className="text-xs text-gray-500">
-                Updated: {new Date(userProfile.updatedAt).toLocaleDateString()}
               </div>
             </div>
           </div>
