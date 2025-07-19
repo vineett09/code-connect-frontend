@@ -365,13 +365,23 @@ const DSAChallengeRoom = () => {
     if (socket) socket.emit("end-challenge", { roomId: room.id });
   };
   const handleSubmitSolution = () => {
-    if (socket && userCode.trim()) {
-      setIsSubmitting(true);
-      socket.emit("submit-solution", {
-        roomId: room.id,
-        solution: { language: selectedLanguage, code: userCode },
-      });
+    if (!socket || !userCode.trim()) return;
+
+    // ✅ Prevent multiple accepted submissions
+    const alreadyAccepted = submissions.some(
+      (s) => s.status === "accepted" && s.challengeId === currentChallenge?.id
+    );
+
+    if (alreadyAccepted) {
+      addNotification("✅ You’ve already solved this challenge!", "info");
+      return;
     }
+
+    setIsSubmitting(true);
+    socket.emit("submit-solution", {
+      roomId: room.id,
+      solution: { language: selectedLanguage, code: userCode },
+    });
   };
 
   const handleLeaveRoom = () => {

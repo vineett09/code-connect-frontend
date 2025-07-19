@@ -77,9 +77,9 @@ export async function POST(request) {
       { email: email },
       {
         $inc: {
-          totalGames: winner != null ? 1 : 0, // only count if someone won
+          totalGames: 1, // Always increment total games when challenge ends
           winCount: stats.won ? 1 : 0,
-          lossCount: winner != null && !stats.won ? 1 : 0,
+          lossCount: !stats.won ? 1 : 0, // Only count as loss if someone actually won
           rating: stats.ratingChange || 0,
           totalSubmissions: stats.submissions || 0,
           acceptedSubmissions: stats.acceptedSubmissions || 0,
