@@ -48,6 +48,7 @@ const DSAChallengeRoom = () => {
   const [lastSubmission, setLastSubmission] = useState(null);
   const socketRef = useRef(null);
   const timerRef = useRef(null);
+  const [aiGenerationError, setAiGenerationError] = useState(null);
 
   const languages = [
     { id: "javascript", name: "JavaScript" },
@@ -173,6 +174,15 @@ const DSAChallengeRoom = () => {
         setUserCode(data.challenge.template[selectedLanguage]);
       }
     });
+    newSocket.on("ai-generation-failed", (data) => {
+      setIsGenerating(false);
+      setAiGenerationError(data.error);
+
+      setTimeout(() => {
+        setAiGenerationError(null);
+      }, 5000);
+    });
+
     newSocket.on("solution-submitted", (data) => {
       setIsSubmitting(false);
       setSubmissions((prev) => [...prev, data.submission]);
@@ -218,30 +228,17 @@ const DSAChallengeRoom = () => {
     newSocket.on("dsa-user-disconnected", (data) => {
       setUsers(data.users);
     });
-
     newSocket.on("error", (errorData) => {
-      const errorMessage =
-        errorData?.message ||
-        (typeof errorData === "string" ? errorData : "Unknown socket error");
+      const errorMessage = errorData?.message || "Unknown socket error";
 
-      console.error("Socket error details:", {
-        message: errorMessage,
-        data: errorData,
-        timestamp: new Date().toISOString(),
-      });
+      console.error("Socket error:", errorMessage);
 
-      setError(errorMessage);
+      setError(errorMessage); // optional
       addNotification(errorMessage, "error");
-
       setConnectionStatus("error");
 
-      if (
-        errorMessage.includes("Room not found") ||
-        errorMessage.includes("does not exist")
-      ) {
-        setTimeout(() => {
-          router.push("/");
-        }, 2000);
+      if (errorMessage.includes("Room not found")) {
+        setTimeout(() => router.push("/"), 2000);
       }
     });
 
@@ -352,7 +349,8 @@ const DSAChallengeRoom = () => {
   };
   const handleGenerateChallenge = () => {
     if (socket) {
-      setIsGenerating(true); // ✅ start loading
+      setIsGenerating(true);
+      setAiGenerationError(null); // Clear previous errors
       socket.emit("generate-challenge", {
         roomId: room.id,
         difficulty: room.difficulty,

@@ -29,9 +29,30 @@ const MainContent = ({
   isSubmitting,
   onSubmitSolution,
   lastSubmission,
+  aiGenerationError, // Add this prop
+  onRetryGeneration,
 }) => {
   return (
     <div>
+      {aiGenerationError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <div>
+              <h3 className="text-red-800 font-medium">
+                Challenge Generation Failed
+              </h3>
+              <p className="text-red-600 text-sm mt-1">{aiGenerationError}</p>
+              <button
+                onClick={onRetryGeneration}
+                className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Challenge Controls */}
       <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 border border-gray-700 ">
         <div className="flex items-center justify-between">
