@@ -49,7 +49,8 @@ const DSAChallengeRoom = () => {
   const socketRef = useRef(null);
   const timerRef = useRef(null);
   const [aiGenerationError, setAiGenerationError] = useState(null);
-
+  const [isSavingCode, setIsSavingCode] = useState(false);
+  const [codeSaved, setCodeSaved] = useState(false);
   const languages = [
     { id: "javascript", name: "JavaScript" },
     { id: "python", name: "Python" },
@@ -278,6 +279,9 @@ const DSAChallengeRoom = () => {
     if (!socket || !room || !user || !userCode || room.status !== "active")
       return;
 
+    setIsSavingCode(true);
+    setCodeSaved(false);
+
     const debounceTimer = setTimeout(() => {
       socket.emit("save-code", {
         roomId: room.id,
@@ -286,9 +290,20 @@ const DSAChallengeRoom = () => {
       console.log(
         `[DEBUG] ✅ Code saved after 2 seconds inactivity at ${new Date().toLocaleTimeString()}`
       );
-    }, 2000); // 2 seconds
 
-    return () => clearTimeout(debounceTimer);
+      setIsSavingCode(false);
+      setCodeSaved(true);
+
+      // Hide "Code saved" message after 2 seconds
+      setTimeout(() => {
+        setCodeSaved(false);
+      }, 2000);
+    }, 2000);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      setIsSavingCode(false);
+    };
   }, [userCode]);
 
   useEffect(() => {
@@ -493,6 +508,8 @@ const DSAChallengeRoom = () => {
             submissions={submissions}
             getStatusColor={getStatusColor}
             lastSubmission={lastSubmission}
+            isSavingCode={isSavingCode}
+            codeSaved={codeSaved}
           />
           <Sidebar
             users={users}

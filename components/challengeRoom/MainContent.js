@@ -29,8 +29,10 @@ const MainContent = ({
   isSubmitting,
   onSubmitSolution,
   lastSubmission,
-  aiGenerationError, // Add this prop
+  aiGenerationError,
   onRetryGeneration,
+  isSavingCode, // Add this
+  codeSaved, // Add this
 }) => {
   return (
     <div>
@@ -240,6 +242,23 @@ const MainContent = ({
                     <h3 className="text-lg font-semibold text-white">
                       Solution
                     </h3>
+                    {/* Add saving indicator */}
+                    {room?.status === "active" && (
+                      <div className="ml-4">
+                        {isSavingCode && (
+                          <span className="text-xs text-yellow-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                            Saving...
+                          </span>
+                        )}
+                        {codeSaved && (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            Code saved
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="bg-gray-800 px-2 py-1 rounded text-xs text-gray-400 border border-gray-600">
                     {selectedLanguage}
