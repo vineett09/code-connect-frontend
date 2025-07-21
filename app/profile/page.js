@@ -19,6 +19,7 @@ import {
   Award,
   Brain,
   Code2,
+  Share2,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -35,6 +36,7 @@ export default function ProfilePage() {
     preferredTopics: [],
     preferredDifficulty: "medium",
   });
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const topicOptions = [
     "Arrays",
@@ -112,6 +114,12 @@ export default function ProfilePage() {
     }
   };
 
+  const handleShareProfile = () => {
+    const profileUrl = `${window.location.origin}/profile/${userProfile._id}`;
+    navigator.clipboard.writeText(profileUrl);
+    setShowShareDialog(true);
+    setTimeout(() => setShowShareDialog(false), 3000);
+  };
   const handleTopicToggle = (topic) => {
     setEditForm((prev) => ({
       ...prev,
@@ -191,6 +199,20 @@ export default function ProfilePage() {
       longest: userProfile.longestStreak || 0,
     };
   };
+  const getTotalSolvedCount = () => {
+    if (!userProfile || !userProfile.solvedProblems) return 0;
+    return userProfile.solvedProblems.length;
+  };
+
+  const getLastGameDate = () => {
+    if (!userProfile?.lastGameDate) return "N/A";
+    return new Date(userProfile.lastGameDate).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   const getRatingLevel = (rating) => {
     if (rating >= 1800) return "Expert";
     if (rating >= 1600) return "Advanced";
@@ -277,17 +299,27 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              {isEditing ? (
-                <X className="w-4 h-4" />
-              ) : (
-                <Edit className="w-4 h-4" />
-              )}
-              {isEditing ? "Cancel" : "Edit Profile"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleShareProfile}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                Share Profile
+              </button>
+
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                {isEditing ? (
+                  <X className="w-4 h-4" />
+                ) : (
+                  <Edit className="w-4 h-4" />
+                )}
+                {isEditing ? "Cancel" : "Edit Profile"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -397,6 +429,32 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-400 mt-1">
               {userProfile.winCount} wins
             </p>
+          </div>
+          <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 backdrop-blur-sm rounded-xl border border-cyan-500/20 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-cyan-500/20 rounded-lg p-2">
+                <Code2 className="w-5 h-5 text-cyan-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">
+                Solved Problems
+              </h3>
+            </div>
+            <div className="text-3xl font-bold text-cyan-400">
+              {getTotalSolvedCount()}
+            </div>
+            <p className="text-sm text-gray-400 mt-1">Unique problems solved</p>
+          </div>
+          <div className="bg-gradient-to-br from-teal-500/20 to-teal-600/20 backdrop-blur-sm rounded-xl border border-teal-500/20 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-teal-500/20 rounded-lg p-2">
+                <Calendar className="w-5 h-5 text-teal-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Last Game</h3>
+            </div>
+            <div className="text-lg font-bold text-teal-400">
+              {getLastGameDate()}
+            </div>
+            <p className="text-sm text-gray-400 mt-1">Last played on</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -590,6 +648,41 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      {showShareDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b22] border border-gray-700 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-fade-in">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-green-400" />
+                Profile Link Copied!
+              </h2>
+              <button
+                onClick={() => setShowShareDialog(false)}
+                className="text-gray-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-4">
+              Your profile link is ready to share with others.
+            </p>
+
+            <div className="bg-gray-800 text-sm text-green-400 px-4 py-2 rounded-lg font-mono truncate border border-gray-700 mb-4">
+              {`${window.location.origin}/profile/${userProfile._id}`}
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowShareDialog(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition"
+              >
+                Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
