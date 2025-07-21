@@ -49,7 +49,7 @@ export default function HomePage() {
       icon: <Play className="w-8 h-8" />,
       title: "Universal Compiler",
       description:
-        "Execute code in 25+ languages instantly. No setup required, just code and run.",
+        "Execute code instantly. No setup required, just code and run.",
       gradient: "from-purple-500 to-pink-400",
     },
     {
@@ -166,7 +166,7 @@ export default function HomePage() {
       </section>
 
       {/* Feature Tabs */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-6">Everything You Need</h2>
@@ -412,16 +412,16 @@ export default function HomePage() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400">1,247</div>
-                  <div className="text-gray-400">Challenges Won</div>
+                  <div className="text-3xl font-bold text-green-400">100</div>
+                  <div className="text-gray-400">Total games</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-400">89%</div>
                   <div className="text-gray-400">Win Rate</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400">152</div>
-                  <div className="text-gray-400">Hours Coded</div>
+                  <div className="text-3xl font-bold text-purple-400">20</div>
+                  <div className="text-gray-400">Win Streak</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-yellow-400">23</div>
@@ -497,8 +497,13 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <button className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-12 py-6 rounded-2xl font-bold text-xl transition-all transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25 flex items-center justify-center">
-                Start Coding Now
+              <button
+                onClick={() => {
+                  router.push("/challenge-room");
+                }}
+                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-12 py-6 rounded-2xl font-bold text-xl transition-all transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25 flex items-center justify-center"
+              >
+                Start challenge Now
                 <Sparkles className="ml-3 w-6 h-6 group-hover:rotate-12 transition-transform" />
               </button>
             </div>

@@ -258,13 +258,13 @@ const JoinOrCreateRoom = () => {
                 </div>
                 <h2 className="text-3xl font-bold mb-2">
                   {formMode === "join"
-                    ? "Join DSA Challenge Room"
-                    : "Create New DSA Room"}
+                    ? "Join Challenge Room"
+                    : "Create New Challenge Room"}
                 </h2>
                 <p className="text-gray-400">
                   {formMode === "join"
                     ? "Enter room details to start collaborating"
-                    : "Set up a new DSA challenge session"}
+                    : "Set up a new challenge session"}
                 </p>
               </div>
 
@@ -485,7 +485,7 @@ const JoinOrCreateRoom = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Code className="w-4 h-4" />
-                    <span>DSA Challenges</span>
+                    <span> Challenges</span>
                   </div>
                 </div>
               </div>
