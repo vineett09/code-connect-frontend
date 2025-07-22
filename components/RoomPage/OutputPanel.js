@@ -124,7 +124,7 @@ export default function OutputPanel({
               <div className="flex flex-col items-center justify-center text-center h-full">
                 <Terminal className="w-10 h-10 text-gray-600 mb-2" />
                 <p className="text-gray-500 text-base">
-                  Click "Run" to see the output here
+                  Click &quot;Run&quot; to see the output here
                 </p>
               </div>
             )}

@@ -94,6 +94,7 @@ export default function HomePage() {
     { name: "Java", popularity: 88 },
     { name: "SQL", popularity: 75 },
   ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Existing feature rotation interval
@@ -118,18 +119,15 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
-      {/* Animated Background */}
       <div className="fixed inset-0 opacity-20">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full filter blur-3xl animate-pulse"></div>
         <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full filter blur-3xl animate-pulse delay-2000"></div>
       </div>
 
-      {/* Hero Section */}
       <section className="relative pt-20 pb-32 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            {/* Badge */}
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 mb-8">
               <Sparkles className="w-4 h-4 mr-2 text-blue-400" />
               <span className="text-sm font-medium">
@@ -187,7 +185,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Feature Tabs */}
       <section className="py-5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -197,7 +194,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Tab Navigation */}
           <div className="flex flex-wrap justify-center gap-4 mb-12">
             {["collaboration", "challenges", "analytics"].map((tab) => (
               <button
@@ -214,7 +210,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <div
@@ -240,7 +235,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Interactive Code Editor Preview */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-800/30 to-gray-900/30">
         <div className="max-w-7xl mx-auto">
           <div className="bg-gray-900/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 overflow-hidden shadow-2xl">
@@ -273,7 +267,7 @@ export default function HomePage() {
                 <div className="flex">
                   <span className="text-gray-500 w-10">1</span>
                   <span className="text-blue-400">
-                    // AI Generated Challenge: Two Sum
+                    AI Generated Challenge: Two Sum
                   </span>
                 </div>
                 <div className="flex">
@@ -314,7 +308,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Live Leaderboard */}
               <div className="mt-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700/50">
                 <div className="flex items-center mb-4">
                   <Trophy className="w-5 h-5 text-yellow-500 mr-2" />
@@ -369,7 +362,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Language Support with Progress Bars */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-5xl font-bold mb-6"> Languages Supported</h2>
@@ -401,7 +393,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Profile & Achievement Preview */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-800/30 to-gray-900/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -412,7 +403,6 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Profile Card */}
             <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 p-8">
               <div className="flex items-center mb-8">
                 <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl font-bold">
@@ -452,7 +442,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Achievement Showcase */}
             <div className="space-y-6">
               {[
                 {
@@ -502,7 +491,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-32 px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-6xl mx-auto text-center">
           <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm rounded-3xl border border-blue-500/30 p-16">

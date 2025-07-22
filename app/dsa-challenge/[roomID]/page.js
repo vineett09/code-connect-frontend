@@ -56,6 +56,7 @@ const DSAChallengeRoom = () => {
     { id: "java", name: "Java" },
     { id: "go", name: "Go" },
   ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isReady) return;

@@ -24,6 +24,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchPublicProfile();
