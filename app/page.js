@@ -82,12 +82,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  const formatNumber = (num) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M+`;
-    if (num >= 1000) return `${(num / 1000).toFixed(0)}K+`;
-    return num.toString();
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
       {/* Animated Background */}

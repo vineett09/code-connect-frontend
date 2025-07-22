@@ -28,11 +28,13 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Code className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Code Connect Logo"
+              className="h-8 w-auto object-contain"
+            />
             <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              CodeConnect
+              Codeion
             </span>
           </Link>
 
