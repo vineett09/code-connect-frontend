@@ -18,12 +18,32 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeTab, setActiveTab] = useState("collaboration");
 
   const router = useRouter();
+  const performHealthCheck = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/health`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Health check successful:", data);
+      } else {
+        console.warn("Health check failed with status:", response.status);
+      }
+    } catch (error) {
+      console.error("Health check error:", error);
+    }
+  };
   const features = [
     {
       icon: <Users className="w-8 h-8" />,
@@ -76,10 +96,24 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    // Existing feature rotation interval
+    const featureInterval = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length);
     }, 4000);
-    return () => clearInterval(interval);
+
+    // Health check interval - every 15 minutes (900,000 ms)
+    const healthCheckInterval = setInterval(() => {
+      performHealthCheck();
+    }, 15 * 60 * 1000);
+
+    // Initial health check on component mount
+    performHealthCheck();
+
+    // Cleanup both intervals
+    return () => {
+      clearInterval(featureInterval);
+      clearInterval(healthCheckInterval);
+    };
   }, []);
 
   return (
