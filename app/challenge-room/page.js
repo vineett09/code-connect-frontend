@@ -3,22 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { io } from "socket.io-client";
-import {
-  Users,
-  Plus,
-  Hash,
-  User,
-  Settings,
-  Code,
-  X,
-  LogIn,
-  LogOut,
-} from "lucide-react";
-
+import { Users, Plus, Hash, User, Code, X, LogIn } from "lucide-react";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const JoinOrCreateRoom = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [formMode, setFormMode] = useState("join"); // 'join' or 'create'
+  const [formMode, setFormMode] = useState("join");
   const [createForm, setCreateForm] = useState({
     roomName: "",
     difficulty: "medium",
@@ -64,7 +54,7 @@ const JoinOrCreateRoom = () => {
   }, []);
 
   useEffect(() => {
-    const socket = io("http://localhost:5000/dsa", { autoConnect: false });
+    const socket = io(`${API_URL}/dsa`, { autoConnect: false });
 
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
@@ -91,22 +81,19 @@ const JoinOrCreateRoom = () => {
     setError("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/dsa-rooms/create",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            roomName: createForm.roomName,
-            difficulty: createForm.difficulty,
-            isPrivate: createForm.isPrivate,
-            userName: createForm.userName,
-            userId: session.user.id || session.user.email, // Include user ID
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/dsa-rooms/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomName: createForm.roomName,
+          difficulty: createForm.difficulty,
+          isPrivate: createForm.isPrivate,
+          userName: createForm.userName,
+          userId: session.user.id || session.user.email,
+        }),
+      });
 
       const data = await response.json();
 
@@ -164,14 +151,6 @@ const JoinOrCreateRoom = () => {
       await signIn(provider);
     } catch (error) {
       console.error("Login error:", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Logout error:", error);
     }
   };
 

@@ -1,4 +1,3 @@
-// components/RoomHeader.js
 import React from "react";
 import { Users, Clock, LogOut, Copy, Check, Settings } from "lucide-react";
 

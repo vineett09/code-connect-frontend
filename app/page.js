@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Code,
   Users,
   Play,
   Zap,
@@ -13,12 +12,7 @@ import {
   BarChart3,
   Shield,
   Star,
-  Gamepad2,
-  Brain,
   Crown,
-  TrendingUp,
-  Award,
-  Calendar,
   Clock,
   Globe,
   Sparkles,

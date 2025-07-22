@@ -1,7 +1,6 @@
-// For your profile route (route.js in api/user/profile)
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "../../auth/[...nextauth]/route"; // Fixed import
+import { authOptions } from "../../auth/[...nextauth]/route";
 import User from "@/models/User";
 import connectToDatabase from "@/lib/mongoose";
 

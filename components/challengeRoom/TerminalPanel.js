@@ -10,7 +10,6 @@ const TerminalPanel = ({ rawError }) => {
         <TerminalSquare className="w-5 h-5" />
         Compilation / Runtime Error
       </h3>
-      {/* Keep the same full-width block for readability */}
       <pre className="text-sm text-red-300 overflow-x-auto whitespace-pre-wrap">
         {rawError}
       </pre>

@@ -12,10 +12,10 @@ import {
   Check,
   Settings,
 } from "lucide-react";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export default function EnterRoom() {
   const router = useRouter();
-  const [formMode, setFormMode] = useState("join"); // 'join' or 'create'
+  const [formMode, setFormMode] = useState("join");
   const [formData, setFormData] = useState({
     roomId: "",
     userName: "",
@@ -28,7 +28,6 @@ export default function EnterRoom() {
   const [error, setError] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // Consistent language list with RoomPage
   const languages = [
     { id: "javascript", name: "JavaScript", ext: ".js" },
     { id: "python", name: "Python", ext: ".py" },
@@ -52,7 +51,6 @@ export default function EnterRoom() {
   }, []);
 
   const generateRoomId = () => {
-    // Using crypto.randomUUID for a highly unique ID
     const newRoomId = crypto.randomUUID();
     setGeneratedRoomId(newRoomId);
     setFormData((prev) => ({ ...prev, roomId: newRoomId }));
@@ -90,7 +88,7 @@ export default function EnterRoom() {
       localStorage.setItem("userName", formData.userName);
 
       if (formMode === "create") {
-        const response = await fetch("http://localhost:5000/api/rooms", {
+        const response = await fetch(`${API_URL}/api/rooms`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -111,9 +109,7 @@ export default function EnterRoom() {
 
         router.push(`/room/${formData.roomId}`);
       } else {
-        const response = await fetch(
-          `http://localhost:5000/api/rooms/${formData.roomId}`
-        );
+        const response = await fetch(`${API_URL}/api/rooms/${formData.roomId}`);
 
         if (!response.ok) {
           if (response.status === 404) {

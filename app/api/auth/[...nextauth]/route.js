@@ -4,7 +4,6 @@ import User from "@/models/User";
 import connectToDatabase from "@/lib/mongoose";
 
 export const authOptions = {
-  // Remove the MongoDB adapter - we'll handle users manually
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -13,7 +12,7 @@ export const authOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt", // Use JWT instead of database sessions
+    strategy: "jwt",
   },
   pages: {
     signIn: "/login",
@@ -23,20 +22,16 @@ export const authOptions = {
       try {
         await connectToDatabase();
 
-        // Check if user exists in our custom User model
         const existingUser = await User.findOne({ email: user.email });
 
         if (!existingUser) {
-          // Create a new user with our custom schema
           await User.create({
             name: user.name,
             email: user.email,
             image: user.image,
             providerId: account.providerAccountId,
-            // Default values will be set by schema
           });
         } else {
-          // Update existing user with any missing fields
           await User.findByIdAndUpdate(existingUser._id, {
             name: user.name,
             image: user.image,
@@ -53,9 +48,7 @@ export const authOptions = {
     },
 
     async jwt({ token, user, account }) {
-      // This runs whenever a JWT is created or updated
       if (account) {
-        // First time login - add user data to token
         await connectToDatabase();
         const customUser = await User.findOne({ email: token.email });
 
@@ -77,7 +70,6 @@ export const authOptions = {
     },
 
     async session({ session, token }) {
-      // Send properties to the client
       if (token) {
         session.user.id = token.id;
         session.user.solvedProblems = token.solvedProblems;

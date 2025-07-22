@@ -1,6 +1,5 @@
-// components/challengeRoom/NotificationContainer.js
 import React from "react";
-import { useNotification } from "@/context/NotificationContext"; // Adjust path if needed
+import { useNotification } from "@/context/NotificationContext";
 import Notification from "./Notification";
 
 const NotificationContainer = () => {

@@ -1,4 +1,3 @@
-// components/ConnectionStatus.js
 import React from "react";
 import { useRouter } from "next/navigation";
 import { XCircle, Loader2 } from "lucide-react";

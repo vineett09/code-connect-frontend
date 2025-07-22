@@ -104,7 +104,6 @@ export default function ProfilePage() {
         const updatedProfile = await response.json();
         setUserProfile(updatedProfile);
         setIsEditing(false);
-        // Update the session with new data
         await update();
       }
     } catch (error) {
@@ -136,14 +135,12 @@ export default function ProfilePage() {
     if (rating >= 1200) return "text-green-400";
     return "text-blue-400";
   };
-  // Add these new calculation functions after your existing calculateWinRate function:
 
   const calculateWinRate = () => {
     if (!userProfile || userProfile.totalGames === 0) return 0;
     return Math.round((userProfile.winCount / userProfile.totalGames) * 100);
   };
 
-  // ADD these new functions:
   const calculateAcceptanceRate = () => {
     if (!userProfile || userProfile.totalSubmissions === 0) return 0;
     return Math.round(

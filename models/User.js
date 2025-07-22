@@ -6,12 +6,10 @@ const userSchema = new mongoose.Schema({
   image: { type: String },
   providerId: { type: String },
 
-  // Enhanced game stats
+  // game stats
   solvedProblems: [{ type: String }],
   winCount: { type: Number, default: 0 },
   totalGames: { type: Number, default: 0 },
-
-  // ADD these new fields:
   lossCount: { type: Number, default: 0 },
 
   // Difficulty-based stats

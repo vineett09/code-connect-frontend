@@ -1,7 +1,6 @@
 import {
   Users,
   MessageCircle,
-  Settings,
   X,
   Send,
   Download,

@@ -1,4 +1,3 @@
-// components/challengeRoom/Notification.js
 import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from "lucide-react";
 

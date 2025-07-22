@@ -1,4 +1,3 @@
-// components/MainContent.js
 import React, { useState } from "react";
 import {
   Send,
@@ -31,8 +30,8 @@ const MainContent = ({
   lastSubmission,
   aiGenerationError,
   onRetryGeneration,
-  isSavingCode, // Add this
-  codeSaved, // Add this
+  isSavingCode,
+  codeSaved,
 }) => {
   return (
     <div>
@@ -242,7 +241,6 @@ const MainContent = ({
                     <h3 className="text-lg font-semibold text-white">
                       Solution
                     </h3>
-                    {/* Add saving indicator */}
                     {room?.status === "active" && (
                       <div className="ml-4">
                         {isSavingCode && (

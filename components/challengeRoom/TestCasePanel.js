@@ -1,4 +1,3 @@
-// components/challengeRoom/TestCasePanel.jsx
 import { useState } from "react";
 import { CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 

@@ -2,21 +2,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { io } from "socket.io-client";
-import { useSession } from "next-auth/react"; // Import useSession
+import { useSession } from "next-auth/react";
 
-// Import the new components
-import ConnectionStatus from "@/components/challengeRoom/ConnectionStatus"; // Adjust path as needed
+import ConnectionStatus from "@/components/challengeRoom/ConnectionStatus";
 import RoomHeader from "@/components/challengeRoom/RoomHeader";
 import MainContent from "@/components/challengeRoom/MainContent";
 import Sidebar from "@/components/challengeRoom/Sidebar";
 import {
   NotificationProvider,
   useNotification,
-} from "@/context/NotificationContext"; // Adjust path if needed
+} from "@/context/NotificationContext";
 import NotificationContainer from "@/components/challengeRoom/NotificationContainer";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const DSAChallengeRoom = () => {
-  const { data: session } = useSession(); // Get session data
-
+  const { data: session } = useSession();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,7 +24,6 @@ const DSAChallengeRoom = () => {
   const roomId = params.roomID;
   const userName = searchParams.get("userName");
 
-  // All state and refs remain here
   const [socket, setSocket] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [error, setError] = useState(null);
@@ -68,7 +66,7 @@ const DSAChallengeRoom = () => {
       console.log("Using stored sessionId:", storedSessionId);
     }
 
-    const newSocket = io("http://localhost:5000/dsa", {
+    const newSocket = io(`${API_URL}/dsa`, {
       transports: ["websocket"],
       upgrade: false,
     });
@@ -117,7 +115,6 @@ const DSAChallengeRoom = () => {
       setCurrentChallenge(data.room.currentChallenge);
       setRemainingTime(data.room.remainingTime);
 
-      // In dsa-room-joined
       if (data.userCode && data.userCode.trim() !== "") {
         setUserCode(data.userCode);
         setShouldSetTemplate(false);
@@ -234,7 +231,7 @@ const DSAChallengeRoom = () => {
 
       console.error("Socket error:", errorMessage);
 
-      setError(errorMessage); // optional
+      setError(errorMessage);
       addNotification(errorMessage, "error");
       setConnectionStatus("error");
 
@@ -257,7 +254,6 @@ const DSAChallengeRoom = () => {
 
     newSocket.connect();
 
-    // ✅ Heartbeat
     const heartbeatInterval = setInterval(() => {
       if (newSocket.connected) {
         newSocket.emit("heartbeat", { timestamp: Date.now() });
@@ -294,7 +290,6 @@ const DSAChallengeRoom = () => {
       setIsSavingCode(false);
       setCodeSaved(true);
 
-      // Hide "Code saved" message after 2 seconds
       setTimeout(() => {
         setCodeSaved(false);
       }, 2000);
@@ -438,7 +433,7 @@ const DSAChallengeRoom = () => {
   };
   const handleLanguageChange = (langId) => {
     setSelectedLanguage(langId);
-    setShouldSetTemplate(true); // tell useEffect to set new template
+    setShouldSetTemplate(true);
   };
 
   const getStatusColor = (status) => {
@@ -461,7 +456,6 @@ const DSAChallengeRoom = () => {
   }
 
   if (!room) {
-    // A simplified loading state for when connection is fine but room data isn't loaded yet
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -523,7 +517,6 @@ const DSAChallengeRoom = () => {
     </div>
   );
 };
-// Create a wrapper component to provide the context
 const DSAChallengeRoomContent = () => {
   return (
     <NotificationProvider>

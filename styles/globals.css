@@ -20,12 +20,10 @@
     }
   }
 
-  /* This ensures the layout accounts for the output panel */
 body {
   --output-panel-height: 0px;
 }
 
-/* For the sidebar height calculation */
 .aside-height {
   height: calc(100vh - 4rem - var(--output-panel-height));
 }
@@ -34,8 +32,8 @@ body {
 }
 
 .scrollbar-hide {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
 }
 @tailwind base;
 @tailwind components;

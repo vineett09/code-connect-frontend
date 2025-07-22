@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import io from "socket.io-client";
 import { judge0Languages, languages } from "@/lib/constants";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export const useRoomLogic = () => {
   const { roomId } = useParams();
   const router = useRouter();
@@ -56,7 +56,7 @@ export const useRoomLogic = () => {
 
   // Main useEffect for Socket Connection and Event Handling
   useEffect(() => {
-    const newSocket = io("http://localhost:5000/main");
+    const newSocket = io(`${API_URL}/main`);
     setSocket(newSocket);
 
     const userName = localStorage.getItem("userName");
@@ -206,8 +206,6 @@ export const useRoomLogic = () => {
         currentActiveTab === tabId ? newActiveTab : currentActiveTab
       );
     });
-    // In useRoomLogic.js, replace the existing tab-removed handler with:
-    // In useRoomLogic.js, replace the tab-removed handler with:
     newSocket.on("tab-removed", (data) => {
       const { tabId } = data;
 
@@ -579,8 +577,6 @@ export const useRoomLogic = () => {
     outputPanelHeight,
     messages,
     messagesEndRef,
-
-    // Functions
     handleCodeChange,
     handleShareTab,
     leaveRoom,

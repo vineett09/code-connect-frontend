@@ -1,4 +1,4 @@
-import { Plus, X, Share2, Lock, Users, Eye, EyeOff } from "lucide-react";
+import { Plus, X, Lock, Users, Eye, EyeOff } from "lucide-react";
 export default function Tabs({
   tabs,
   activeTab,

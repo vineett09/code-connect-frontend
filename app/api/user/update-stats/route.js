@@ -123,7 +123,6 @@ export async function POST(request) {
   }
 }
 
-// Helper function to check consecutive days
 function isConsecutiveDay(lastDate, currentDate) {
   const oneDay = 24 * 60 * 60 * 1000;
   const timeDiff = currentDate.getTime() - lastDate.getTime();
