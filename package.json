@@ -4,7 +4,7 @@
   "private": true,
   "proxy": "http://localhost:5000",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -28,7 +28,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.10",
-    "babel-plugin-transform-remove-console": "^6.9.4",
     "eslint": "^9",
     "eslint-config-next": "15.3.4"
   }
