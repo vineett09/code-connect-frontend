@@ -11,7 +11,9 @@ export const useRoomLogic = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [chatMessage, setChatMessage] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    typeof window !== "undefined" && window.innerWidth >= 1024
+  );
   const [activeSidebarTab, setActiveSidebarTab] = useState("users");
   const [showOutput, setShowOutput] = useState(false);
   const [copied, setCopied] = useState(false);
