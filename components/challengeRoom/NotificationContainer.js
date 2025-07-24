@@ -6,7 +6,7 @@ const NotificationContainer = () => {
   const { notifications, removeNotification } = useNotification();
 
   return (
-    <div className="fixed top-20 right-4 z-50 w-full max-w-sm">
+    <div className="fixed top-4 right-2 left-2 z-50 w-auto sm:top-20 sm:right-4 sm:left-auto sm:max-w-sm">
       {notifications.map((notification) => (
         <Notification
           key={notification.id}

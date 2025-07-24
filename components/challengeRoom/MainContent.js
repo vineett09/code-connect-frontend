@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Send,
-  CheckCircle,
-  XCircle,
   Play,
   Square,
   Loader2,
@@ -55,9 +53,11 @@ const MainContent = ({
         </div>
       )}
       {/* Challenge Controls */}
-      <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 border border-gray-700 ">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      {/* ────── Responsive Challenge Controls ────── */}
+      <div className="bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4 mb-6 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          {/* Left side: owner controls + status */}
+          <div className="flex items-center gap-3 flex-wrap">
             {user?.name === room?.createdBy && (
               <button
                 onClick={
@@ -66,30 +66,33 @@ const MainContent = ({
                     : onGenerateChallenge
                 }
                 disabled={isGenerating}
-                className={`flex items-center gap-2 py-2 px-4 rounded-lg font-medium transition-all ${
-                  room?.status === "active"
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`flex items-center gap-2 py-2 px-4 rounded-lg font-medium transition-all
+        ${
+          room?.status === "active"
+            ? "bg-red-600 hover:bg-red-700"
+            : "bg-blue-600 hover:bg-blue-700"
+        }
+        disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm sm:text-base`}
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    <span>Generating...</span>
                   </>
                 ) : room?.status === "active" ? (
                   <>
-                    <Square className="w-4 h-4" />
-                    End Challenge
+                    <Square className="w-4 h-4 shrink-0" />
+                    <span>End Challenge</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4" />
-                    Generate Challenge
+                    <Play className="w-4 h-4 shrink-0" />
+                    <span>Generate Challenge</span>
                   </>
                 )}
               </button>
             )}
+
             {room?.status === "active" && (
               <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -99,9 +102,11 @@ const MainContent = ({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-gray-300">
-              <Code className="w-4 h-4" />
+
+          {/* Right side: language selector */}
+          <div className="flex items-center gap-2 text-gray-300 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Code className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium">Language:</span>
             </div>
             <select
@@ -118,15 +123,14 @@ const MainContent = ({
           </div>
         </div>
 
-        {/* Owner Note - Only show for room creator when challenge is active */}
+        {/* Owner warning (visible when active) */}
         {user?.name === room?.createdBy &&
           room?.status === "active" &&
           currentChallenge && (
-            <div className="mt-4 flex items-center justify-center gap-2 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
-              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <div className="mt-3 flex items-center justify-center gap-2 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
               <span className="text-amber-400 text-sm">
-                Please end the challenge before leaving the room to save the
-                results.
+                End the challenge before leaving to save results.
               </span>
             </div>
           )}

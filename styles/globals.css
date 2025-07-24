@@ -55,3 +55,8 @@ body {
     }
   }
 }
+/* Allow text wrapping & remove horizontal overflow */
+html,body{ overflow-x:hidden; word-break:break-word; }
+
+/* Smooth scrolling on iOS */
+html{ scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
